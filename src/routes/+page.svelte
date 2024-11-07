@@ -1,2 +1,3 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<div class="flex justify-center items-center h-screen w-full bg-black">
+  <h1 class="text-4xl text-white font-mono hover:text-green-500">Hello</h1>
+</div>
