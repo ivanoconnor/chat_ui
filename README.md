@@ -1,36 +1,23 @@
 # sv
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
-
-## Set up Yarn
-
+## Project Setup
+1. Clone the repository
 ```bash
-corepack enable
-yarn -v
-# 1.22.xx
+git clone https://github.com/Astrochamp/chat_ui.git
 ```
-
-## Developing
-
-Once you've created a project and installed dependencies with `yarn install`, start a development server:
-
+2. Make sure [Docker Desktop](https://www.docker.com/) is installed
+3. Build the image (only run once)
 ```bash
-yarn dev
-
-# or start the server and open the app in a new browser tab
-yarn dev -- --open
+docker-compose build
 ```
-
-## Building
-
-To create a production version of your app:
-
+4. Start the container
 ```bash
-yarn build
+docker-compose up
 ```
-
-You can preview the production build with `yarn preview`.
-
-
-## Deploying to the web
-
+5. Open the browser and go to `http://localhost:5173/`
+6. To stop the container type `Ctrl+C` in the terminal where the container is running.
+Then run
+```bash
+docker-compose down
+```
+You can also use the VSCode Docker extension to manage the container.
