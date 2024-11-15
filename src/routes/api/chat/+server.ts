@@ -5,17 +5,34 @@ import { error } from '@sveltejs/kit';
 
 const service = new ChatGPTService(OPENAI_API_KEY);
 
-export const GET: RequestHandler = ({ url }) => {
-	const min = Number(url.searchParams.get('min') ?? '0');
-	const max = Number(url.searchParams.get('max') ?? '1');
+export const POST: RequestHandler = async ({ request }) => {
+  const formData = await request.formData();
+  const action = formData.get('action');
 
-	const d = max - min;
+  if (!action) {
+    return error(400, 'Action parameter is required');
+  }
 
-	if (isNaN(d) || d < 0) {
-		error(400, 'min and max must be numbers, and min must be less than max');
-	}
+  switch (action) {
+    case 'getResponse':
+      const prompt = formData.get('prompt')?.toString() || '';
+      const model = formData.get('model')?.toString() || service.DEFAULT_MODEL;
+      const imageFiles = formData.getAll('imageFiles') as File[];
+      const imageDetailLevel = formData.get('imageDetailLevel')?.toString() as "auto" | "low" | "high" || "auto";
 
-	const random = min + Math.random() * d;
+      try {
+        const imageUrls = await Promise.all(imageFiles.map(file => ChatGPTService.createImageDataURL(file)));
+        const response = await service.getResponse(prompt, model, imageUrls, imageDetailLevel);
+        return new Response(response);
+      } catch (err) {
+        return error(500, "Failed to get response");
+      }
 
-	return new Response(String(random));
+    case 'clearContext':
+      service.clearContext();
+      return new Response('Context cleared');
+
+    default:
+      return error(400, 'Invalid action parameter');
+  }
 };
