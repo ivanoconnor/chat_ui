@@ -91,8 +91,8 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
   });
 </script>
 
-<div class="h-screen w-full flex bg-zinc-900 justify-center">
-  <div class="w-full sm:w-1/2 flex flex-col bg-zinc-900">
+<div class="h-screen w-full flex bg-zinc-800 justify-center">
+  <div class="w-full sm:w-1/2 flex flex-col">
     <div class="flex flex-col h-full">
       <div class="flex flex-col flex-grow p-4 chat overflow-y-auto">
         {#each messages as message, i}
@@ -107,8 +107,8 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
               class:items-start={message.role !== "user"}
             >
               <div
-              class="flex flex-col items-center rounded-xl py-2 px-4"
-              class:bg-zinc-800={message.role === "user"}
+                class="flex flex-col items-center rounded-xl py-2 px-4"
+                class:bg-neutral-700={message.role === "user"}
               >
                 <!-- this is wrong -->
                 {#if message.img}
@@ -134,10 +134,10 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
 
   <div class="w-full sm:w-1/2 self-end mb-8">
     <div
-      class="flex flex-row items-center justify-between w-full bg-zinc-800 rounded-full p-4 gap-2"
+      class="flex flex-row items-center justify-between w-full bg-neutral-700 rounded-full p-4 gap-2"
     >
       <textarea
-        class="pl-3 w-full text-white focus:outline-none bg-transparent resize-none"
+        class="pl-3 w-full text-white focus:outline-none bg-transparent resize-none placeholder:text-neutral-400"
         rows="1"
         bind:value={inputMessage}
         placeholder="Type a message..."
