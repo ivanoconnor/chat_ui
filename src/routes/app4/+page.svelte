@@ -8,6 +8,8 @@
   const messages: Message[] = $state([]);
   const client = new ChatGPTClient();
 
+  let textInputElement: HTMLTextAreaElement;
+
   async function sendMessage() {
     const trimmed = inputMessage.trim();
 
@@ -88,6 +90,17 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
     messages.push(demoMessage1);
     messages.push(demoMessage2);
     scrollChatToBottom();
+
+    document.querySelectorAll("textarea").forEach(function (textarea) {
+      textarea.style.height = textarea.scrollHeight + "px";
+      textarea.style.overflowY = "hidden";
+
+      textarea.addEventListener("input", function () {
+        console.log("input");
+        this.style.height = "auto";
+        this.style.height = this.scrollHeight + "px";
+      });
+    });
   });
 </script>
 
@@ -112,7 +125,7 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
                 class="flex flex-col items-center rounded-xl py-2 px-4"
                 class:bg-neutral-700={message.role === "user"}
               >
-                <!-- this is wrong -->
+                <!-- todo fix to allow messages with images AND text -->
                 {#if message.img}
                   <img
                     src={message.img}
@@ -134,34 +147,20 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
       </div>
 
       <div class="w-full self-end mb-4 sm:mb-8 flex flex-col items-center px-4">
-        <div
-          class="flex flex-row items-center justify-between bg-neutral-700 rounded-full p-4 gap-2 w-full sm:w-1/2"
-        >
-          <textarea
-            class="pl-3 w-full text-white focus:outline-none bg-transparent resize-none placeholder:text-neutral-400"
-            rows="1"
-            bind:value={inputMessage}
-            placeholder="Type a message..."
-            onkeydown={(e) => {
-              // todo check this for mobile
-              if (e.shiftKey && e.key === "Enter") {
-                e.preventDefault();
-                inputMessage += "\n";
-              } else if (e.key === "Enter") {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-          ></textarea>
-          <div class="flex justify-end">
-            <button
-              class="bg-white text-black py-1 px-3 rounded-full"
-              onclick={sendMessage}
-            >
-              Send
-            </button>
-          </div>
-        </div>
+        <textarea
+          class="pl-5 text-white focus:outline-none resize-none placeholder:text-neutral-400
+      flex flex-row items-center justify-between bg-neutral-700 rounded-[28px] p-4 gap-2 w-full sm:w-1/2"
+          rows="1"
+          bind:this={textInputElement}
+          bind:value={inputMessage}
+          placeholder="Type a message..."
+          onkeydown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
+        ></textarea>
       </div>
     </div>
   </div>
