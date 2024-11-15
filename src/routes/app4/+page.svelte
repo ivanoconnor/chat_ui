@@ -91,13 +91,15 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
   });
 </script>
 
-<div class="h-screen w-full flex bg-zinc-800 justify-center">
-  <div class="w-full sm:w-1/2 flex flex-col">
-    <div class="flex flex-col h-full">
-      <div class="flex flex-col flex-grow p-4 chat overflow-y-auto">
+<div class="h-dvh w-full flex bg-zinc-800 justify-center">
+  <div class="w-full flex flex-col">
+    <div class="flex flex-col h-full w-full">
+      <div
+        class="flex flex-col flex-grow p-4 chat overflow-y-auto items-center"
+      >
         {#each messages as message, i}
           <div
-            class="flex flex-row gap-2 mb-4"
+            class="flex flex-row gap-2 mb-4 w-full sm:w-1/2"
             class:justify-end={message.role === "user"}
             class:justify-start={message.role !== "user"}
           >
@@ -127,39 +129,55 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
           </div>
         {/each}
 
-        <div class="h-4"></div>
+        <!-- spacer -->
+        <div class="p-2 sm:p-4"></div>
       </div>
-    </div>
-  </div>
 
-  <div class="w-full sm:w-1/2 self-end mb-8">
-    <div
-      class="flex flex-row items-center justify-between w-full bg-neutral-700 rounded-full p-4 gap-2"
-    >
-      <textarea
-        class="pl-3 w-full text-white focus:outline-none bg-transparent resize-none placeholder:text-neutral-400"
-        rows="1"
-        bind:value={inputMessage}
-        placeholder="Type a message..."
-        onkeydown={(e) => {
-          // todo check this for mobile
-          if (e.shiftKey && e.key === "Enter") {
-            e.preventDefault();
-            inputMessage += "\n";
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            sendMessage();
-          }
-        }}
-      ></textarea>
-      <div class="flex justify-end">
-        <button
-          class="bg-white text-black py-1 px-3 rounded-full"
-          onclick={sendMessage}
+      <div class="w-full self-end mb-4 sm:mb-8 flex flex-col items-center px-4">
+        <div
+          class="flex flex-row items-center justify-between bg-neutral-700 rounded-full p-4 gap-2 w-full sm:w-1/2"
         >
-          Send
-        </button>
+          <textarea
+            class="pl-3 w-full text-white focus:outline-none bg-transparent resize-none placeholder:text-neutral-400"
+            rows="1"
+            bind:value={inputMessage}
+            placeholder="Type a message..."
+            onkeydown={(e) => {
+              // todo check this for mobile
+              if (e.shiftKey && e.key === "Enter") {
+                e.preventDefault();
+                inputMessage += "\n";
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+          ></textarea>
+          <div class="flex justify-end">
+            <button
+              class="bg-white text-black py-1 px-3 rounded-full"
+              onclick={sendMessage}
+            >
+              Send
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  ::-webkit-scrollbar {
+    background-color: #27272a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #525252;
+    border: 2px solid #27272a;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #737373;
+  }
+</style>
