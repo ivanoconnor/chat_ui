@@ -1,4 +1,3 @@
-import { OPENAI_API_KEY } from "$env/static/private"; // run `yarn dev` first
 import { OpenAI } from "openai";
 import type { ChatCompletionContentPartImage } from "openai/resources/index.mjs";
 import type {
@@ -15,17 +14,14 @@ function getCurrentDate(): string {
   return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
-export class API {
+export class ChatGPTService {
   private readonly openai: OpenAI;
   private readonly messages: ChatCompletionMessageParam[] = [];
   public readonly DEFAULT_MODEL = "gpt-4o";
 
-  constructor() {
-    this.openai = new OpenAI({
-      apiKey: OPENAI_API_KEY
-    });
-
-    this.messages.push(API.buildSystemMessage());
+  constructor(apiKey: string) {
+    this.openai = new OpenAI({ apiKey });
+    this.messages.push(ChatGPTService.buildSystemMessage());
   }
 
   public static buildSystemMessage(): ChatCompletionSystemMessageParam {
@@ -40,9 +36,18 @@ Current date: ${getCurrentDate()}`;
     };
   }
 
-  public static createImageURL(imageFile: File) {}
+  public static createImageDataURL(imageFile: File): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        resolve(event.target?.result as string);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(imageFile);
+    });
+  }
 
-  async getResponse(
+  public async getResponse(
     prompt: string,
     model: string = this.DEFAULT_MODEL,
     imageUrls: string[] = [],
@@ -78,8 +83,8 @@ Current date: ${getCurrentDate()}`;
     }
   }
 
-  clearContext(): void {
+  public clearContext(): void {
     this.messages.length = 0;
-    this.messages.push(API.buildSystemMessage());
+    this.messages.push(ChatGPTService.buildSystemMessage());
   };
 }
