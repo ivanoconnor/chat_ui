@@ -29,6 +29,20 @@
     if (chat) chat.scrollTop = chat.scrollHeight;
   }
 
+  function _resizeTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = textarea.scrollHeight + "px";
+    textarea.style.overflowY = "hidden";
+
+    textarea.addEventListener("input", function () {
+      this.style.height = "auto";
+      this.style.height = this.scrollHeight + "px";
+    });
+  }
+
+  function autoResize() {
+    _resizeTextarea(textInputElement);
+  }
+
   const demoMessage1: Message = {
     text: "Create a detailed factsheet about LLMs",
     role: "user",
@@ -90,17 +104,6 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
     messages.push(demoMessage1);
     messages.push(demoMessage2);
     scrollChatToBottom();
-
-    document.querySelectorAll("textarea").forEach(function (textarea) {
-      textarea.style.height = textarea.scrollHeight + "px";
-      textarea.style.overflowY = "hidden";
-
-      textarea.addEventListener("input", function () {
-        console.log("input");
-        this.style.height = "auto";
-        this.style.height = this.scrollHeight + "px";
-      });
-    });
   });
 </script>
 
@@ -160,6 +163,7 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
               sendMessage();
             }
           }}
+          oninput={autoResize}
         ></textarea>
       </div>
     </div>
