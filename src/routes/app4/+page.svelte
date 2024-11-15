@@ -30,13 +30,8 @@
   }
 
   function _resizeTextarea(textarea: HTMLTextAreaElement) {
+    textarea.style.height = "auto";
     textarea.style.height = textarea.scrollHeight + "px";
-    textarea.style.overflowY = "hidden";
-
-    textarea.addEventListener("input", function () {
-      this.style.height = "auto";
-      this.style.height = this.scrollHeight + "px";
-    });
   }
 
   function autoResize() {
@@ -104,6 +99,9 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
     messages.push(demoMessage1);
     messages.push(demoMessage2);
     scrollChatToBottom();
+
+    textInputElement.style.height = textInputElement.scrollHeight + "px";
+    textInputElement.style.overflowY = "hidden";
   });
 </script>
 
