@@ -17,6 +17,8 @@
 
     messages.push({ text: trimmed, role: "user" });
     inputMessage = "";
+    await tick();
+    scrollChatToBottom();
 
     const response = await client.getResponse(trimmed);
     messages.push({ text: response, role: "assistant" });
@@ -26,6 +28,7 @@
   }
 
   function scrollChatToBottom() {
+    // todo if scrolled up more than (?) don't scroll to bottom
     const chat = document.querySelector(".chat");
     if (chat) chat.scrollTop = chat.scrollHeight;
   }
