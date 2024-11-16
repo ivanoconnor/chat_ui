@@ -8,7 +8,7 @@
   const messages: Message[] = $state([]);
   const client = new ChatGPTClient();
 
-  let textInputElement: HTMLTextAreaElement;
+  let textInputElement: HTMLDivElement;
 
   async function sendMessage() {
     const trimmed = inputMessage.trim();
@@ -27,15 +27,6 @@
   function scrollChatToBottom() {
     const chat = document.querySelector(".chat");
     if (chat) chat.scrollTop = chat.scrollHeight;
-  }
-
-  function _resizeTextarea(textarea: HTMLTextAreaElement) {
-    textarea.style.height = "auto";
-    textarea.style.height = textarea.scrollHeight + "px";
-  }
-
-  function autoResize() {
-    _resizeTextarea(textInputElement);
   }
 
   const demoMessage1: Message = {
@@ -99,9 +90,6 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
     messages.push(demoMessage1);
     messages.push(demoMessage2);
     scrollChatToBottom();
-
-    textInputElement.style.height = textInputElement.scrollHeight + "px";
-    textInputElement.style.overflowY = "hidden";
   });
 </script>
 
@@ -148,27 +136,33 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
       </div>
 
       <div class="w-full self-end mb-4 sm:mb-8 flex flex-col items-center px-4">
-        <textarea
-          class="pl-5 text-white focus:outline-none resize-none placeholder:text-neutral-400
-      flex flex-row items-center justify-between bg-neutral-700 rounded-[28px] p-4 gap-2 w-full sm:w-1/2"
-          rows="1"
+        <div
+          contenteditable="true"
+          role="textbox"
+          tabindex="0"
+          class="pl-5 text-white focus:outline-none bg-neutral-700 rounded-[28px] p-4 w-full
+          sm:w-1/2 input-div inline-block max-h-64 overflow-y-auto"
           bind:this={textInputElement}
-          bind:value={inputMessage}
-          placeholder="Type a message..."
+          bind:innerText={inputMessage}
+          data-placeholder="Type a message..."
           onkeydown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               sendMessage();
             }
           }}
-          oninput={autoResize}
-        ></textarea>
+        ></div>
       </div>
     </div>
   </div>
 </div>
 
 <style>
+  .input-div:empty::before {
+    content: attr(data-placeholder);
+    color: #a3a3a3;
+  }
+
   ::-webkit-scrollbar {
     background-color: #27272a;
   }
