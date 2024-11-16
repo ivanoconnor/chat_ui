@@ -137,21 +137,24 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
 
       <div class="w-full self-end mb-4 sm:mb-8 flex flex-col items-center px-4">
         <div
-          contenteditable="true"
-          role="textbox"
-          tabindex="0"
-          class="pl-5 text-white focus:outline-none bg-neutral-700 rounded-[28px] p-4 w-full
-          sm:w-1/2 input-div inline-block max-h-64 overflow-y-auto"
-          bind:this={textInputElement}
-          bind:innerText={inputMessage}
-          data-placeholder="Type a message..."
-          onkeydown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
-          }}
-        ></div>
+          class="bg-neutral-700 rounded-[28px] p-4 w-full sm:w-1/2 flex flex-row items-center flex-grow"
+        >
+          <div
+            contenteditable="true"
+            role="textbox"
+            tabindex="0"
+            class="pl-1 text-white h-full focus:outline-none input-div inline-block max-h-64 overflow-y-auto w-full"
+            bind:this={textInputElement}
+            bind:innerText={inputMessage}
+            data-placeholder="Type a message..."
+            onkeydown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+          ></div>
+        </div>
       </div>
     </div>
   </div>
