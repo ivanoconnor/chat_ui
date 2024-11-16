@@ -12,7 +12,7 @@
   });
 </script>
 
-<div class="markdown flex flex-col gap-3">
+<div class="markdown flex flex-col gap-4">
   {@html marked(message.text)}
 </div>
 
@@ -54,8 +54,18 @@
   }
 
   .markdown :global(code) {
+    background-color: #404040;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    display: inline-block;
+    color: white;
+  }
+
+  .markdown :global(code[class*="language-"]) {
     background-color: black;
-    /* color: white; */
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: 0.75rem;
@@ -64,6 +74,6 @@
     font-size: 0.875rem;
     line-height: 1.5rem;
     display: inline-block;
-    border: 1px solid #52525b;
+    border: 1px solid #404040;
   }
 </style>

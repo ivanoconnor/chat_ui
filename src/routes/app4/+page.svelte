@@ -82,6 +82,12 @@
 print("Hello, World!")
 \`\`\`
 
+\`\`\`
+> output
+\`\`\`
+
+Store variables in \`localStorage\` for persistence across sessions.
+
 LLMs are revolutionizing the field of AI with their ability to process and generate human language, offering both opportunities and challenges for the future.`,
     role: "assistant",
   };
@@ -122,7 +128,7 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
                     class="w-32 h-32 rounded-lg"
                   />
                 {:else}
-                  <div class="text-white leading-relaxed">
+                  <div class="text-white leading-loose">
                     <ResponseMessage {message} />
                   </div>
                 {/if}
