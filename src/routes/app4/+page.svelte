@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ChatGPTClient } from "$lib/client";
-  import { onMount } from "svelte";
-  import type { Message } from "$lib/types";
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
+  import type { Message } from "$lib/types";
+  import { onMount, tick } from "svelte";
 
   let inputMessage = $state("");
   const messages: Message[] = $state([]);
@@ -21,6 +21,7 @@
     const response = await client.getResponse(trimmed);
     messages.push({ text: response, role: "assistant" });
 
+    await tick();
     scrollChatToBottom();
   }
 
@@ -29,72 +30,12 @@
     if (chat) chat.scrollTop = chat.scrollHeight;
   }
 
-  const demoMessage1: Message = {
-    text: "Create a detailed factsheet about LLMs",
-    role: "user",
-  };
-
-  const demoMessage2: Message = {
-    text: `# Factsheet: Large Language Models (LLMs)
-
-## Overview
-- **Definition**: LLMs are artificial intelligence systems designed to understand, generate, and manipulate human language at scale.
-- **Functionality**: They process and predict text, enabling tasks like translation, summarization, and conversation.
-
-## Key Characteristics
-- **Training Data**: LLMs are trained on vast datasets, comprising books, articles, and internet text.
-- **Model Architecture**: Often based on transformer architecture, which utilizes attention mechanisms to weigh the significance of different words.
-
-## Popular Examples
-- **GPT (Generative Pre-trained Transformer)**: Developed by OpenAI.
-- **BERT (Bidirectional Encoder Representations from Transformers)**: Developed by Google.
-- **LLaMA (Large Language Model Meta AI)**: Developed by Meta.
-
-## Applications
-- **Natural Language Understanding**: Comprehends and interprets text.
-- **Content Generation**: Creates articles, emails, and more.
-- **Language Translation**: Converts text between languages.
-- **Sentiment Analysis**: Determines emotions and opinions in text.
-- **Chatbots and Virtual Assistants**: Powers conversational AI systems.
-
-## Benefits
-- **Efficiency**: Automates and speeds up text processing tasks.
-- **Versatility**: Adapts to a wide range of applications and industries.
-- **Scalability**: Improves as more data and computational power become available.
-
-## Challenges
-- **Bias**: May reflect biases present in the training data.
-- **Interpretability**: Often functions as a “black box,” making decision-making processes opaque.
-- **Resource-Intensive**: Requires substantial computational resources for training.
-
-## Ethical Considerations
-- **Data Privacy**: Ensures user data is handled responsibly.
-- **Bias Mitigation**: Strives to reduce and address inherent biases.
-- **Transparency and Accountability**: Develops clear guidelines for use and deployment.
-
-## Future Directions
-- **Fine-tuning and Adaptation**: Enhances models for specific tasks and industries.
-- **Efficiency Improvements**: Reduces resource requirements and increases accessibility.
-- **Ethical Frameworks**: Develops stronger standards for ethical use.
-
-\`\`\`python
-# Example Code
-print("Hello, World!")
-\`\`\`
-
-\`\`\`
-> output
-\`\`\`
-
-Store variables in \`localStorage\` for persistence across sessions.
-
-LLMs are revolutionizing the field of AI with their ability to process and generate human language, offering both opportunities and challenges for the future.`,
-    role: "assistant",
-  };
+  function clearMessages() {
+    client.clearContext();
+    messages.splice(0, messages.length);
+  }
 
   onMount(() => {
-    messages.push(demoMessage1);
-    messages.push(demoMessage2);
     scrollChatToBottom();
   });
 </script>
@@ -141,25 +82,58 @@ LLMs are revolutionizing the field of AI with their ability to process and gener
         <div class="p-2 sm:p-4"></div>
       </div>
 
-      <div class="w-full self-end mb-4 sm:mb-8 flex flex-col items-center px-4">
+      <div
+        class="w-full self-end mb-4 sm:mb-8 flex flex-row items-center px-4 justify-center gap-2"
+      >
+        <button
+          aria-label="Clear chat messages"
+          class="bg-transparent hover:bg-neutral-700 fill-neutral-600 hover:fill-neutral-400 w-14 h-14 p-2.5 rounded-full"
+          onclick={clearMessages}
+        >
+          <svg
+            viewBox="0 0 512 512"
+            version="1.1"
+            id="svg1"
+            xmlns="http://www.w3.org/2000/svg"
+            class=""
+          >
+            <defs id="defs1" />
+            <path
+              d="M94 187.1C120.8 124.1 183.3 80 256 80c39.7 0 77.8 15.8 105.9 43.9L414.1 176 360 176c-13.3 0-24 10.7-24 24s10.7 24 24 24l112 0c13.3 0 24-10.7 24-24l0-112c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 54.1L395.9 89.9C358.8 52.8 308.5 32 256 32C163.4 32 83.9 88.2 49.8 168.3c-5.2 12.2 .5 26.3 12.7 31.5s26.3-.5 31.5-12.7zm368 157c5.2-12.2-.4-26.3-12.6-31.5s-26.3 .4-31.5 12.6C391 388.1 328.6 432 256 432c-39.7 0-77.8-15.8-105.9-43.9L97.9 336l54.1 0c13.3 0 24-10.7 24-24s-10.7-24-24-24L40 288c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-54.1 52.1 52.1C153.2 459.2 203.5 480 256 480c92.5 0 171.8-56 206-135.9z"
+              id="path1"
+            />
+          </svg>
+        </button>
         <div
-          class="bg-neutral-700 rounded-[28px] p-4 w-full sm:w-1/2 flex flex-row items-center flex-grow"
+          class="bg-neutral-700 rounded-[28px] p-4 w-full sm:w-1/2 flex flex-row items-center relative"
         >
           <div
             contenteditable="true"
             role="textbox"
             tabindex="0"
-            class="pl-1 text-white h-full focus:outline-none input-div inline-block max-h-64 overflow-y-auto w-full"
+            class="pl-1 pr-8 text-white h-full focus:outline-none input-div inline-block max-h-64 overflow-y-auto w-full"
             bind:this={textInputElement}
             bind:innerText={inputMessage}
             data-placeholder="Type a message..."
             onkeydown={(e) => {
+              // todo enter shouldn't send message on touch devices
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
               }
             }}
           ></div>
+          <button
+            aria-label="Send message"
+            class="bg-white fill-black w-8 h-8 rounded-full absolute right-3 bottom-3 flex items-center justify-center p-2"
+            onclick={sendMessage}
+          >
+            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="m 273.46931,39.4 c -4.6,-4.7 -10.8,-7.4 -17.4,-7.4 -6.6,0 -12.8,2.7 -17.4,7.4 l -168.000003,176 c -9.2,9.6 -8.8,24.8 0.8,33.9 9.6,9.1 24.8,8.8 33.900003,-0.8 l 126.7,-132.6 V 456 c 0,13.3 10.7,24 24,24 13.3,0 24,-10.7 24,-24 V 115.9 l 126.6,132.7 c 9.2,9.6 24.3,9.9 33.9,0.8 9.6,-9.1 9.9,-24.3 0.8,-33.9 l -168,-176 z"
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
