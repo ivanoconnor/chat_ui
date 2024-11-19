@@ -3,3 +3,9 @@ export type Message = {
   role: "user" | "assistant";
   img?: string;
 };
+
+export type Model = {
+  id: string;
+  name: string;
+  description?: string;
+}

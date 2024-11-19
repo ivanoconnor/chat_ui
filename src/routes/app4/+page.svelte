@@ -7,6 +7,7 @@
   let inputMessage = $state("");
   const messages: Message[] = $state([]);
   const client = new ChatGPTClient();
+  let selectedModel = $state(client.DEFAULT_MODEL);
 
   let textInputElement: HTMLDivElement;
 
@@ -20,7 +21,7 @@
     await tick();
     scrollChatToBottom();
 
-    const response = await client.getResponse(trimmed);
+    const response = await client.getResponse(trimmed, selectedModel);
     messages.push({ text: response, role: "assistant" });
 
     await tick();
@@ -90,7 +91,8 @@
       >
         <button
           aria-label="Clear chat messages"
-          class="bg-transparent hover:bg-neutral-700 fill-neutral-600 hover:fill-neutral-400 w-14 h-14 p-2.5 rounded-full"
+          class="bg-transparent hover:bg-neutral-700 fill-neutral-600 hover:fill-neutral-400
+          w-14 h-14 p-2.5 rounded-full mt-auto"
           onclick={clearMessages}
         >
           <svg
@@ -110,8 +112,10 @@
         <div
           class="bg-neutral-700 rounded-[28px] p-4 w-full sm:w-1/2 flex flex-row items-center relative"
         >
+          <!-- svelte-ignore a11y_autofocus -->
           <div
             contenteditable="true"
+            autofocus
             role="textbox"
             tabindex="0"
             class="pl-1 pr-8 text-white h-full focus:outline-none input-div inline-block max-h-64 overflow-y-auto w-full"
@@ -138,6 +142,18 @@
             </svg>
           </button>
         </div>
+        <select
+          class="bg-neutral-700 text-white rounded-xl h-14 mt-auto px-2.5"
+          bind:value={selectedModel}
+        >
+          {#each client.getModels() as model}
+            <option
+              value={model.id}
+              title={model.description}
+              selected={model.id === selectedModel}>{model.name}</option
+            >
+          {/each}
+        </select>
       </div>
     </div>
   </div>
