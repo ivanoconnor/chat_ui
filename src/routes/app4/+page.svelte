@@ -52,7 +52,7 @@
       >
         {#each messages as message, i}
           <div
-            class="flex flex-row gap-2 mb-4 w-full sm:w-1/2"
+            class="flex flex-row gap-2 mb-4 w-full sm:w-3/4"
             class:justify-end={message.role === "user"}
             class:justify-start={message.role !== "user"}
           >
@@ -87,7 +87,7 @@
       </div>
 
       <div
-        class="w-full self-end mb-4 sm:mb-8 flex flex-row items-center px-4 justify-center gap-2"
+        class="w-full sm:w-3/4 self-center mb-4 sm:mb-8 flex flex-row items-center px-4 justify-center gap-2"
       >
         <button
           aria-label="Clear chat messages"
@@ -110,11 +110,11 @@
           </svg>
         </button>
         <div
-          class="bg-neutral-700 rounded-[28px] p-4 w-full sm:w-1/2 flex flex-row items-center relative"
+          class="bg-neutral-700 rounded-[28px] p-4 flex-grow flex flex-row items-center relative"
         >
           <!-- svelte-ignore a11y_autofocus -->
           <div
-            contenteditable="true"
+            contenteditable="plaintext-only"
             autofocus
             role="textbox"
             tabindex="0"
