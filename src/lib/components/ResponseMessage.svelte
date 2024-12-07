@@ -1,11 +1,36 @@
 <script lang="ts">
   import { marked } from "marked";
+  import katex from "katex";
   import type { Message } from "$lib/types";
   import hljs from "highlight.js";
   import { onMount } from "svelte";
 
   export let message: Message;
-  onMount(() => {
+
+  async function renderTex(html: Promise<string> | string) {
+    return (await html)
+      .replace(/\\\((.*?)\\\)/g, (_, match) => {
+        return katex.renderToString(match, {
+          throwOnError: false,
+          displayMode: false,
+          output: "mathml",
+        });
+      })
+      .replace(/\\\[((.|\n)*?)\\\]/g, (_, match) => {
+        return katex.renderToString(match, {
+          throwOnError: false,
+          displayMode: true,
+          output: "mathml",
+        });
+      });
+  }
+
+  let renderedText: string;
+  $: (async () => {
+    renderedText = await marked(await renderTex(message.text));
+  })();
+
+  onMount(async () => {
     // hljs.configure({ languages: ["python"] });
     // hljs.initHighlightingOnLoad();
     hljs.highlightAll();
@@ -13,7 +38,7 @@
 </script>
 
 <div class="markdown flex flex-col gap-4">
-  {@html marked(message.text)}
+  {@html renderedText}
 </div>
 
 <style>
@@ -75,5 +100,9 @@
     line-height: 1.5rem;
     display: inline-block;
     border: 1px solid #404040;
+  }
+
+  :global(math[display="block"]) {
+    padding: 0.4rem;
   }
 </style>

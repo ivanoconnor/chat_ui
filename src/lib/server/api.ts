@@ -68,9 +68,15 @@ Current date: ${getCurrentDate()}`;
     }
 
     this.messages.push({ content: userContent, role: "user" } as ChatCompletionUserMessageParam);
+    const chatMessages: ChatCompletionMessageParam[] = [...this.messages];
+
+    if (model === "o1-mini" || model === "o1-preview" || model === "o1") {
+      // remove system message for o1 models
+      chatMessages.shift();
+    }
 
     const completion = await this.openai.chat.completions.create({
-      messages: this.messages,
+      messages: chatMessages,
       model: model
     });
 
