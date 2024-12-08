@@ -41,60 +41,6 @@
 
   onMount(() => {
     scrollChatToBottom();
-    messages.push({
-      text: `To show that \\( i_c(t) = \\omega C v_0 \\cos(\\omega t + \\frac{\\pi}{2}) \\) given the voltage across the capacitor \\( v_c(t) = v_0 \\cos(\\omega t) \\) and the relationship \\( i_c(t) = C \\frac{dv_c(t)}{dt} \\), follow these steps:
-
-### 1. Differentiate the Voltage with Respect to Time
-
-Given:
-\\[
-v_c(t) = v_0 \\cos(\\omega t)
-\\]
-
-Differentiate \\( v_c(t) \\) with respect to time \\( t \\):
-\\[
-\\frac{dv_c(t)}{dt} = \\frac{d}{dt} \\left[ v_0 \\cos(\\omega t) \\right] = -v_0 \\omega \\sin(\\omega t)
-\\]
-
-### 2. Express the Current \\( i_c(t) \\)
-
-Using the relationship between current and the derivative of voltage:
-\\[
-i_c(t) = C \\frac{dv_c(t)}{dt} = C \\left( -v_0 \\omega \\sin(\\omega t) \\right) = -\\omega C v_0 \\sin(\\omega t)
-\\]
-
-### 3. Relate Sine to Cosine Using a Phase Shift
-
-Recall the trigonometric identity that relates sine and cosine with a phase shift of \\( \\frac{\\pi}{2} \\):
-\\[
-\\sin(\\omega t) = \\cos\\left(\\omega t - \\frac{\\pi}{2}\\right)
-\\]
-\\[
--\\sin(\\omega t) = -\\cos\\left(\\omega t - \\frac{\\pi}{2}\\right) = \\cos\\left(\\omega t + \\frac{\\pi}{2}\\right)
-\\]
-
-### 4. Substitute Back into the Current Expression
-
-Substitute the phase-shifted cosine into the expression for \\( i_c(t) \\):
-\\[
-i_c(t) = -\\omega C v_0 \\sin(\\omega t) = \\omega C v_0 \\cos\\left(\\omega t + \\frac{\\pi}{2}\\right)
-\\]
-
-### Final Result
-
-Thus, we have shown that:
-\\[
-i_c(t) = \\omega C v_0 \\cos\\left(\\omega t + \\frac{\\pi}{2}\\right)
-\\]
-
-### Summary
-
-By differentiating the voltage across the capacitor and using trigonometric identities, we established that the current \\( i_c(t) \\) leads the voltage \\( v_c(t) \\) by a phase angle of \\( \\frac{\\pi}{2} \\), resulting in the expression:
-\\[
-i_c(t) = \\omega C v_0 \\cos\\left(\\omega t + \\frac{\\pi}{2}\\right)
-\\]`,
-      role: "assistant",
-    });
   });
 </script>
 
