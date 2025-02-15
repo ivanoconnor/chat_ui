@@ -16,7 +16,7 @@ export const POST: RequestHandler = async ({ request }) => {
   switch (action) {
     case 'getResponse':
       const prompt = formData.get('prompt')?.toString() || '';
-      const model = formData.get('model')?.toString() || service.DEFAULT_MODEL;
+      const model = formData.get('model')?.toString() || service.DEFAULT_MODEL_ID;
       const imageFiles = formData.getAll('imageFiles') as File[];
       const imageDetailLevel = formData.get('imageDetailLevel')?.toString() as "auto" | "low" | "high" || "auto";
 

@@ -1,3 +1,4 @@
+import { ALL_MODELS } from "$lib/types";
 import { OpenAI } from "openai";
 import type { ChatCompletionContentPartImage } from "openai/resources/index.mjs";
 import type {
@@ -17,7 +18,7 @@ function getCurrentDate(): string {
 export class ChatGPTService {
   private readonly openai: OpenAI;
   private readonly messages: ChatCompletionMessageParam[] = [];
-  public readonly DEFAULT_MODEL = "gpt-4o";
+  public readonly DEFAULT_MODEL_ID = "gpt-4o";
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({ apiKey });
@@ -49,7 +50,7 @@ Current date: ${getCurrentDate()}`;
 
   public async getResponse(
     prompt: string,
-    model: string = this.DEFAULT_MODEL,
+    modelIdentifier: string = this.DEFAULT_MODEL_ID,
     imageUrls: string[] = [],
     imageDetailLevel: "auto" | "low" | "high" = "auto"
   ): Promise<string> {
@@ -69,15 +70,16 @@ Current date: ${getCurrentDate()}`;
 
     this.messages.push({ content: userContent, role: "user" } as ChatCompletionUserMessageParam);
     const chatMessages: ChatCompletionMessageParam[] = [...this.messages];
+    const model = ALL_MODELS.find((m) => m.id === modelIdentifier);
 
-    if (model === "o1-mini" || model === "o1-preview" || model === "o1") {
-      // remove system message for o1 models
+    if (model?.isReasoningModel) {
+      // remove system message for reasoning models
       chatMessages.shift();
     }
 
     const completion = await this.openai.chat.completions.create({
       messages: chatMessages,
-      model: model
+      model: modelIdentifier
     });
 
     const response = completion.choices[0].message.content;

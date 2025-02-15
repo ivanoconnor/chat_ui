@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChatGPTClient } from "$lib/client";
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
-  import type { Message } from "$lib/types";
+  import { type Message, ALL_MODELS } from "$lib/types";
   import { onMount, tick } from "svelte";
 
   let inputMessage = $state("");
@@ -146,7 +146,7 @@
           class="bg-neutral-700 text-white rounded-xl h-14 mt-auto px-2.5"
           bind:value={selectedModel}
         >
-          {#each client.getModels() as model}
+          {#each ALL_MODELS as model}
             <option
               value={model.id}
               title={model.description}
