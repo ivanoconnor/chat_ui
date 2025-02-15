@@ -73,7 +73,7 @@
                     class="w-32 h-32 rounded-lg"
                   />
                 {:else}
-                  <div class="text-white leading-loose">
+                  <div class="text-white leading-loose overflow-x-auto">
                     <ResponseMessage {message} />
                   </div>
                 {/if}
@@ -92,7 +92,7 @@
         <button
           aria-label="Clear chat messages"
           class="bg-transparent hover:bg-neutral-700 fill-neutral-600 hover:fill-neutral-400
-          w-14 h-14 p-2.5 rounded-full mt-auto"
+          w-14 h-14 p-2.5 rounded-full mt-auto flex-shrink-0"
           onclick={clearMessages}
         >
           <svg

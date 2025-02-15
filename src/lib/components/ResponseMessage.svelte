@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { marked } from "marked";
-  import katex from "katex";
   import type { Message } from "$lib/types";
+  import DOMPurify from "dompurify";
   import hljs from "highlight.js";
-  import { onMount } from "svelte";
+  import katex from "katex";
+  import { marked } from "marked";
+  import { tick } from "svelte";
 
   export let message: Message;
 
@@ -27,14 +28,16 @@
 
   let renderedText: string;
   $: (async () => {
-    renderedText = await marked(await renderTex(message.text));
-  })();
-
-  onMount(async () => {
-    // hljs.configure({ languages: ["python"] });
-    // hljs.initHighlightingOnLoad();
+    renderedText = DOMPurify.sanitize(
+      await marked(await renderTex(message.text), {
+        breaks: true,
+      }),
+    );
+    await tick();
     hljs.highlightAll();
-  });
+    await tick();
+    renderedText = DOMPurify.sanitize(renderedText);
+  })();
 </script>
 
 <div class="markdown flex flex-col gap-4">
