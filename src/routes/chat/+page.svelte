@@ -73,7 +73,7 @@
                     class="w-32 h-32 rounded-lg"
                   />
                 {:else}
-                  <div class="text-white leading-loose overflow-x-auto">
+                  <div class="text-white leading-loose">
                     <ResponseMessage {message} />
                   </div>
                 {/if}
