@@ -1,6 +1,6 @@
 export class ChatGPTClient {
   private readonly apiUrl = 'http://localhost:5173/api';
-  public readonly DEFAULT_MODEL = 'gpt-4o';
+  public readonly DEFAULT_MODEL = 'gpt-4.1';
 
   constructor() { }
 

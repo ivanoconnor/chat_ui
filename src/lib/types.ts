@@ -11,9 +11,15 @@ export interface Model {
   isReasoningModel?: boolean;
 };
 
+export class gpt41 implements Model {
+  id = 'gpt-4.1';
+  name = 'GPT-4.1 (default)';
+  description = 'Latest GPT-4 model with strong instruction following and world knowledge';
+};
+
 export class gpt4o implements Model {
   id = 'gpt-4o';
-  name = 'GPT-4o (default)';
+  name = 'GPT-4o';
   description = 'High-intelligence flagship model for complex, multi-step tasks';
 };
 
@@ -35,33 +41,18 @@ export class gpt4omini implements Model {
   description = 'Small multimodal model. Cheapest and fastest option';
 };
 
-export class o1preview implements Model {
-  id = 'o1-preview';
-  name = 'o1-preview';
-  description = 'Advanced reasoning model with RL chain-of-thought capabilities. Most expensive model, requires usage tier 3 ($100 deposited)';
-  isReasoningModel = true;
-};
-
-export class o1mini implements Model {
-  id = 'o1-mini';
-  name = 'o1-mini';
-  description = 'Faster and cheaper RL reasoning model. Requires usage tier 3';
-  isReasoningModel = true;
-};
-
 export class o3mini implements Model {
   id = 'o3-mini';
   name = 'o3-mini';
-  description = 'Latest small reasoning model. Requires usage tier 3';
+  description = 'Latest small reasoning model with chain-of-thought capabilities';
   isReasoningModel = true;
 };
 
 export const ALL_MODELS: Model[] = [
+  new gpt41(),
   new gpt4o(),
   new gpt4(),
   new gpt4turbo(),
   new gpt4omini(),
-  new o1preview(),
-  new o1mini(),
   new o3mini()
 ];
