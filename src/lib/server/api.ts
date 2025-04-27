@@ -1,13 +1,13 @@
 import { ALL_MODELS } from "$lib/types";
 import { OpenAI } from "openai";
-import type { ChatCompletionContentPartImage } from "openai/resources/index.mjs";
 import type {
-  ChatCompletionAssistantMessageParam,
-  ChatCompletionContentPart,
-  ChatCompletionMessageParam,
-  ChatCompletionSystemMessageParam,
-  ChatCompletionUserMessageParam
-} from "openai/src/resources/index.js";
+  ResponseInputImage,
+  ResponseInputItem,
+  ResponseInputMessageContentList,
+  ResponseInputText,
+  ResponseOutputMessage,
+  ResponseOutputText
+} from "openai/src/resources/responses/responses.js";
 
 
 function getCurrentDate(): string {
@@ -17,7 +17,7 @@ function getCurrentDate(): string {
 
 export class ChatGPTService {
   private readonly openai: OpenAI;
-  private readonly messages: ChatCompletionMessageParam[] = [];
+  private readonly messages: Array<ResponseInputItem> = [];
   public readonly DEFAULT_MODEL_ID = "gpt-4o";
 
   constructor(apiKey: string) {
@@ -25,7 +25,7 @@ export class ChatGPTService {
     this.messages.push(ChatGPTService.buildSystemMessage());
   }
 
-  public static buildSystemMessage(): ChatCompletionSystemMessageParam {
+  public static buildSystemMessage(): ResponseInputItem.Message {
     const text = `You are ChatGPT, an advanced AI assistant trained by OpenAI specialized in supporting revision, idea generation, feasibility analysis, and complex STEM reasoning tasks.
 You are clear, intelligent, helpful, direct when needed, and capable of high-level logical and mathematical reasoning.
 Knowledge cutoff: 2024-06
@@ -40,7 +40,7 @@ When generating content (such as study materials or code), prefer structured, or
 If unsure, reason carefully and transparently rather than guessing. State assumptions clearly when necessary.`;
 
     return {
-      content: text,
+      content: [{ type: "input_text", text } as ResponseInputText],
       role: "system"
     };
   }
@@ -62,38 +62,45 @@ If unsure, reason carefully and transparently rather than guessing. State assump
     imageUrls: string[] = [],
     imageDetailLevel: "auto" | "low" | "high" = "auto"
   ): Promise<string> {
-    let userContent: string | Array<ChatCompletionContentPart>;
-    if (imageUrls.length > 0) {
-      if (prompt.trim().length > 0) {
-        userContent = [
-          { type: "text", text: prompt },
-          ...imageUrls.map((url) => ({ type: "image_url", image_url: { url, detail: imageDetailLevel } } as ChatCompletionContentPartImage))
-        ];
-      } else {
-        userContent = imageUrls.map((url) => ({ type: "image_url", image_url: { url, detail: imageDetailLevel } } as ChatCompletionContentPartImage));
-      }
-    } else {
-      userContent = prompt;
+    let userContent: ResponseInputMessageContentList = [];
+    if (prompt.trim().length > 0) {
+      userContent.push({ type: "input_text", text: prompt } as ResponseInputText);
     }
 
-    this.messages.push({ content: userContent, role: "user" } as ChatCompletionUserMessageParam);
-    const chatMessages: ChatCompletionMessageParam[] = [...this.messages];
+    if (imageUrls.length > 0) {
+      userContent.push(...imageUrls.map((url) => ({ type: "input_image", image_url: url, detail: imageDetailLevel } as ResponseInputImage)));
+    }
+
+    if (userContent.length === 0) {
+      throw new Error("Empty prompt and no images provided");
+    }
+
+    this.messages.push({ content: userContent, role: "user" } as ResponseInputItem.Message);
+
+    // Convert stored messages to format expected by responses API
+    const inputMessages = [...this.messages];
     const model = ALL_MODELS.find((m) => m.id === modelIdentifier);
 
     if (model?.isReasoningModel) {
       // remove system message for reasoning models
-      chatMessages.shift();
+      inputMessages.shift();
     }
 
-    const completion = await this.openai.chat.completions.create({
-      messages: chatMessages,
-      model: modelIdentifier
+    // Use the responses API instead of chat.completions
+    const response = await this.openai.responses.create({
+      model: modelIdentifier,
+      input: inputMessages,
+      // Optional parameters could be added here:
+      // stream: false,
+      // store: true
     });
 
-    const response = completion.choices[0].message.content;
-    if (response) {
-      this.messages.push({ content: response, role: "assistant" } as ChatCompletionAssistantMessageParam);
-      return response;
+    // Access response text using the output_text convenience property
+    const responseText = response.output_text;
+
+    if (responseText) {
+      this.messages.push({ content: [{ type: "output_text", text: responseText } as ResponseOutputText], role: "assistant" } as ResponseOutputMessage);
+      return responseText;
     } else {
       throw new Error("Empty response");
     }
