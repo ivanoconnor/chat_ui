@@ -8,7 +8,6 @@
 
   let { message }: { message: Message } = $props();
   let renderedText = $state("");
-  let showCopyButtons = $state(false);
 
   async function renderTex(html: Promise<string> | string) {
     return (await html)
@@ -112,14 +111,12 @@
 <div
   class="markdown flex flex-col gap-4 w-full max-w-full relative group"
   role="region"
-  onmouseenter={() => message.role === "assistant" && (showCopyButtons = true)}
-  onmouseleave={() => (showCopyButtons = false)}
 >
   {@html renderedText}
 
-  {#if message.role === "assistant" && showCopyButtons}
+  {#if message.role === "assistant"}
     <div
-      class="copy-buttons absolute top-0 right-0 flex gap-2 p-1 bg-neutral-800 rounded-md opacity-90"
+      class="copy-buttons absolute top-0 right-0 translate-x-[105%] flex h-full flex-col gap-2 p-1 bg-transparent rounded-md opacity-90"
     >
       <button
         onclick={copyAsMarkdown}
@@ -128,14 +125,13 @@
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-3 w-3"
-          viewBox="0 0 20 20"
+          viewBox="0 0 384 512"
           fill="currentColor"
+          class="h-3 w-3"
+          ><path
+            d="M214.6 470.6c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-9.2-9.2-11.9-22.9-6.9-34.9s16.6-19.8 29.6-19.8l96 0 0-184c0-22.1 17.9-40 40-40l48 0c22.1 0 40 17.9 40 40l0 184 96 0c12.9 0 24.6 7.8 29.6 19.8s2.2 25.7-6.9 34.9l-160 160z"
+          /></svg
         >
-          <path
-            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-          />
-        </svg>
         MD
       </button>
       <button
