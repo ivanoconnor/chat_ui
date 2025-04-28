@@ -9,6 +9,7 @@ export type Message = {
   // and are not shown in the UI
   role: "user" | "assistant" | "system" | "developer";
   images?: Image[];
+  modelId?: string;
 };
 
 export interface Model {

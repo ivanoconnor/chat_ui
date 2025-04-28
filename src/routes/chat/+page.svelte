@@ -27,6 +27,7 @@
     scrollChatToBottom();
 
     const response = await client.getResponse(messages, selectedModel);
+    response.modelId = selectedModel; // Set the model ID on the response
     messages.push(response);
 
     await tick();
@@ -70,7 +71,7 @@
         class="flex flex-col flex-grow p-4 chat overflow-y-auto items-center"
       >
         {#each messages as message, i}
-          {#if message.role !== "system" && message.role !== "developer"}
+          {#if !["system", "developer"].includes(message.role)}
             <div
               class="flex flex-row gap-2 mb-4 w-full sm:w-3/4"
               class:justify-end={message.role === "user"}
