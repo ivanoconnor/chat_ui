@@ -5,7 +5,7 @@
   import { onMount, tick } from "svelte";
 
   let inputMessage = $state("");
-  const messages: Message[] = $state([]);
+  const messages: Message[] = $state([ChatGPTClient.buildSystemMessage()]);
   const client = new ChatGPTClient();
   let selectedModel = $state(client.DEFAULT_MODEL);
 
@@ -21,8 +21,8 @@
     await tick();
     scrollChatToBottom();
 
-    const response = await client.getResponse(trimmed, selectedModel);
-    messages.push({ text: response, role: "assistant" });
+    const response = await client.getResponse(messages, selectedModel);
+    messages.push(response);
 
     await tick();
     scrollChatToBottom();
@@ -35,7 +35,6 @@
   }
 
   function clearMessages() {
-    client.clearContext();
     messages.splice(0, messages.length);
   }
 
@@ -51,35 +50,41 @@
         class="flex flex-col flex-grow p-4 chat overflow-y-auto items-center"
       >
         {#each messages as message, i}
-          <div
-            class="flex flex-row gap-2 mb-4 w-full sm:w-3/4"
-            class:justify-end={message.role === "user"}
-            class:justify-start={message.role !== "user"}
-          >
+          {#if message.role !== "system" && message.role !== "developer"}
             <div
-              class="flex flex-col items-center"
-              class:items-end={message.role === "user"}
-              class:items-start={message.role !== "user"}
+              class="flex flex-row gap-2 mb-4 w-full sm:w-3/4"
+              class:justify-end={message.role === "user"}
+              class:justify-start={message.role !== "user"}
             >
               <div
-                class="flex flex-col items-center rounded-xl py-2 px-4"
-                class:bg-neutral-700={message.role === "user"}
+                class="flex flex-col items-center"
+                class:items-end={message.role === "user"}
+                class:items-start={message.role !== "user"}
               >
-                <!-- todo fix to allow messages with images AND text -->
-                {#if message.img}
-                  <img
-                    src={message.img}
-                    alt="User uploaded content"
-                    class="w-32 h-32 rounded-lg"
-                  />
-                {:else}
-                  <div class="text-white leading-loose">
-                    <ResponseMessage {message} />
-                  </div>
-                {/if}
+                <div
+                  class="flex flex-col items-center rounded-xl py-2 px-4"
+                  class:bg-neutral-700={message.role === "user"}
+                >
+                  <!-- todo fix to allow messages with images AND text -->
+                  {#if message.images?.length}
+                    <div class="flex flex-row gap-2 mb-4 w-full sm:w-3/4">
+                      {#each message.images as img}
+                        <img
+                          src={img.url}
+                          alt="User uploaded content"
+                          class="w-32 h-32 rounded-lg"
+                        />
+                      {/each}
+                    </div>
+                  {:else}
+                    <div class="text-white leading-loose">
+                      <ResponseMessage {message} />
+                    </div>
+                  {/if}
+                </div>
               </div>
             </div>
-          </div>
+          {/if}
         {/each}
 
         <!-- spacer -->

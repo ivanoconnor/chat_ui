@@ -1,39 +1,22 @@
 import { OPENAI_API_KEY } from "$env/static/private"; // run `yarn dev` first
 import { ChatGPTService } from "$lib/server/api";
+import type { Message } from "$lib/types";
 import type { RequestHandler } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 
 const service = new ChatGPTService(OPENAI_API_KEY);
 
 export const POST: RequestHandler = async ({ request }) => {
-  const formData = await request.formData();
-  const action = formData.get('action');
+  const data = await request.json();
 
-  if (!action) {
-    return error(400, 'Action parameter is required');
-  }
+  const messages = data.messages as Array<Message>;
+  const model = data.model as string;
 
-  switch (action) {
-    case 'getResponse':
-      const prompt = formData.get('prompt')?.toString() || '';
-      const model = formData.get('model')?.toString();
-      const imageFiles = formData.getAll('imageFiles') as File[];
-      const imageDetailLevel = formData.get('imageDetailLevel')?.toString() as "auto" | "low" | "high" || "auto";
-
-      try {
-        const imageUrls = await Promise.all(imageFiles.map(file => ChatGPTService.createImageDataURL(file)));
-        if (!model) return error(400, 'Model parameter is required');
-        const response = await service.getResponse(prompt, model, imageUrls, imageDetailLevel);
-        return new Response(response);
-      } catch (err) {
-        return error(500, "Failed to get response");
-      }
-
-    case 'clearContext':
-      service.clearContext();
-      return new Response('Context cleared');
-
-    default:
-      return error(400, 'Invalid action parameter');
+  try {
+    if (!model) return error(400, 'Model parameter is required');
+    const response = await service.getResponse(messages, model);
+    return new Response(JSON.stringify((response)));
+  } catch (err) {
+    return error(500, "Failed to get response");
   }
 };

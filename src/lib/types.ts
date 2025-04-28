@@ -1,7 +1,14 @@
+export type Image = {
+  url: string;
+  detail: "auto" | "low" | "high";
+};
+
 export type Message = {
   text: string;
-  role: "user" | "assistant";
-  img?: string;
+  // system and developer messages are considered equivalent by the API
+  // and are not shown in the UI
+  role: "user" | "assistant" | "system" | "developer";
+  images?: Image[];
 };
 
 export interface Model {
