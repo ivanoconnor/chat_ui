@@ -17,6 +17,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const response = await service.getResponse(messages, model);
     return new Response(JSON.stringify((response)));
   } catch (err) {
+    console.error("Error in POST /api/chat:", err);
     return error(500, "Failed to get response");
   }
 };

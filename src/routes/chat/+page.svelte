@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ChatGPTClient } from "$lib/client";
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
+  import Toast from "$lib/components/Toast.svelte";
   import { type Message, ALL_MODELS } from "$lib/types";
   import { onMount, tick } from "svelte";
 
@@ -10,6 +11,10 @@
   let selectedModel = $state(client.DEFAULT_MODEL);
 
   let textInputElement: HTMLDivElement;
+
+  // Toast state
+  let toastVisible = $state(false);
+  let toastMessage = $state("");
 
   async function sendMessage() {
     const trimmed = inputMessage.trim();
@@ -35,7 +40,15 @@
   }
 
   function clearMessages() {
-    messages.splice(0, messages.length);
+    if (messages.length > 0) {
+      messages.splice(0, messages.length);
+    }
+    toastMessage = "Messages cleared";
+    toastVisible = true;
+  }
+
+  function hideToast() {
+    toastVisible = false;
   }
 
   onMount(() => {
@@ -162,6 +175,12 @@
       </div>
     </div>
   </div>
+
+  {#if toastVisible}
+    <div class="fixed bottom-0 left-1/2 transform -translate-x-1/2 mb-4 z-50">
+      <Toast message={toastMessage} duration={5000} sendClose={hideToast} />
+    </div>
+  {/if}
 </div>
 
 <style>

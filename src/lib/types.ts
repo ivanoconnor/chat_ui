@@ -4,7 +4,7 @@ export type Image = {
 };
 
 export type Message = {
-  text: string;
+  text?: string;
   // system and developer messages are considered equivalent by the API
   // and are not shown in the UI
   role: "user" | "assistant" | "system" | "developer";

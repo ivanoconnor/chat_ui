@@ -55,6 +55,10 @@ export class ChatGPTClient {
       })
     });
 
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+
     return response.json() as Promise<Message>;
   }
 }

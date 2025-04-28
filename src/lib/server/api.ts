@@ -32,11 +32,11 @@ export class ChatGPTService {
 
         const userContent: ResponseInputMessageContentList = [];
 
-        if (message.text.length > 0) {
+        if (message.text?.length) {
           userContent.push({ type: "input_text", text: message.text } as ResponseInputText);
         }
 
-        if (message.images.length > 0) {
+        if (message.images?.length) {
           userContent.push(...message.images.map((img) => ({ type: "input_image", image_url: img.url, detail: img.detail } as ResponseInputImage)));
         }
 
