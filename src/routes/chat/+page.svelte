@@ -42,6 +42,8 @@
   function clearMessages() {
     if (messages.length > 0) {
       messages.splice(0, messages.length);
+      // Add the system message back to the beginning of the array
+      messages.push(ChatGPTClient.buildSystemMessage());
     }
     toastMessage = "Messages cleared";
     toastVisible = true;
@@ -57,6 +59,11 @@
 </script>
 
 <div class="h-dvh w-full flex bg-zinc-800 justify-center">
+  {#if toastVisible}
+    <div class="fixed top-0 left-1/2 transform -translate-x-1/2 mt-4 z-50">
+      <Toast message={toastMessage} duration={5000} sendClose={hideToast} />
+    </div>
+  {/if}
   <div class="w-full flex flex-col">
     <div class="flex flex-col h-full w-full">
       <div
@@ -175,12 +182,6 @@
       </div>
     </div>
   </div>
-
-  {#if toastVisible}
-    <div class="fixed bottom-0 left-1/2 transform -translate-x-1/2 mb-4 z-50">
-      <Toast message={toastMessage} duration={5000} sendClose={hideToast} />
-    </div>
-  {/if}
 </div>
 
 <style>

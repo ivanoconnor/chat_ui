@@ -41,12 +41,12 @@
 </script>
 
 <div
-  class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex justify-center pointer-events-none"
+  class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex justify-center pointer-events-none"
 >
   <div
-    class="bg-gray-100/95 text-black rounded-lg px-4 py-2.5 flex items-center gap-3 shadow-md text-sm max-w-[300px] pointer-events-auto animate-fade-in"
+    class="bg-gray-100/95 text-black rounded-lg px-4 py-2.5 flex items-center justify-between shadow-md text-sm w-44 pointer-events-auto animate-fade-in"
   >
-    <span>{message}</span>
+    <span class="flex items-center">{message}</span>
     <button
       class="bg-transparent border-0 cursor-pointer p-1 rounded-full flex items-center justify-center hover:bg-black/10"
       onclick={close}
@@ -70,7 +70,7 @@
   @keyframes fade-in {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(-20px);
     }
     to {
       opacity: 1;
