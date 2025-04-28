@@ -6,8 +6,9 @@
   import { marked } from "marked";
   import { tick } from "svelte";
 
-  export let message: Message;
-  let renderedText: string;
+  let { message }: { message: Message } = $props();
+  let renderedText = $state("");
+  let showCopyButtons = $state(false);
 
   async function renderTex(html: Promise<string> | string) {
     return (await html)
@@ -56,15 +57,107 @@
     }
   }
 
-  $: {
+  function copyAsMarkdown() {
+    if (message?.text) {
+      navigator.clipboard
+        .writeText(message.text)
+        .then(() => {
+          showCopySuccess();
+        })
+        .catch((err) => {
+          console.error("Failed to copy text: ", err);
+          showCopyFail();
+        });
+    }
+  }
+
+  async function copyWithFormatting() {
+    const container = document.createElement("div");
+    container.innerHTML = renderedText;
+
+    // Remove copy buttons from the copied content if present
+    const buttonsToRemove = container.querySelectorAll(".copy-buttons");
+    buttonsToRemove.forEach((btn) => btn.remove());
+    const htmlToCopy = container.innerHTML;
+
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([htmlToCopy], { type: "text/html" }),
+          "text/plain": new Blob([container.innerText], { type: "text/plain" }), // fallback
+        }),
+      ]);
+      showCopySuccess();
+    } catch (err) {
+      console.error("Failed to copy formatted text: ", err);
+      showCopyFail();
+    }
+  }
+
+  function showCopySuccess() {
+    // Could implement a toast or visual feedback here
+  }
+
+  function showCopyFail() {
+    // Could implement a toast or visual feedback here
+  }
+
+  $effect(() => {
     if (message?.text) {
       processMessage(message.text);
     }
-  }
+  });
 </script>
 
-<div class="markdown flex flex-col gap-4 w-full max-w-full">
+<div
+  class="markdown flex flex-col gap-4 w-full max-w-full relative group"
+  role="region"
+  onmouseenter={() => message.role === "assistant" && (showCopyButtons = true)}
+  onmouseleave={() => (showCopyButtons = false)}
+>
   {@html renderedText}
+
+  {#if message.role === "assistant" && showCopyButtons}
+    <div
+      class="copy-buttons absolute top-0 right-0 flex gap-2 p-1 bg-neutral-800 rounded-md opacity-90"
+    >
+      <button
+        onclick={copyAsMarkdown}
+        class="text-xs bg-neutral-700 hover:bg-neutral-600 text-white py-1 px-2 rounded flex items-center gap-1"
+        title="Copy as Markdown"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-3 w-3"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+          />
+        </svg>
+        MD
+      </button>
+      <button
+        onclick={copyWithFormatting}
+        class="text-xs bg-neutral-700 hover:bg-neutral-600 text-white py-1 px-2 rounded flex items-center gap-1"
+        title="Copy with formatting"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-3 w-3"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+          <path
+            d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+          />
+        </svg>
+        Text
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>

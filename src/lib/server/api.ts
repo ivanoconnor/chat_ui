@@ -1,5 +1,6 @@
 import { ALL_MODELS } from "$lib/types";
 import { OpenAI } from "openai";
+import { ChatGPTClient } from "$lib/client";
 import type {
   ResponseInputImage,
   ResponseInputItem,
@@ -18,7 +19,6 @@ function getCurrentDate(): string {
 export class ChatGPTService {
   private readonly openai: OpenAI;
   private readonly messages: Array<ResponseInputItem> = [];
-  public readonly DEFAULT_MODEL_ID = "gpt-4o";
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({ apiKey });
@@ -58,7 +58,7 @@ If unsure, reason carefully and transparently rather than guessing. State assump
 
   public async getResponse(
     prompt: string,
-    modelIdentifier: string = this.DEFAULT_MODEL_ID,
+    modelIdentifier: string,
     imageUrls: string[] = [],
     imageDetailLevel: "auto" | "low" | "high" = "auto"
   ): Promise<string> {

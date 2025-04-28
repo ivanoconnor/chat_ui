@@ -16,12 +16,13 @@ export const POST: RequestHandler = async ({ request }) => {
   switch (action) {
     case 'getResponse':
       const prompt = formData.get('prompt')?.toString() || '';
-      const model = formData.get('model')?.toString() || service.DEFAULT_MODEL_ID;
+      const model = formData.get('model')?.toString();
       const imageFiles = formData.getAll('imageFiles') as File[];
       const imageDetailLevel = formData.get('imageDetailLevel')?.toString() as "auto" | "low" | "high" || "auto";
 
       try {
         const imageUrls = await Promise.all(imageFiles.map(file => ChatGPTService.createImageDataURL(file)));
+        if (!model) return error(400, 'Model parameter is required');
         const response = await service.getResponse(prompt, model, imageUrls, imageDetailLevel);
         return new Response(response);
       } catch (err) {
