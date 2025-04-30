@@ -132,15 +132,17 @@
                   class="flex flex-col items-center rounded-xl py-2 px-4"
                   class:bg-neutral-700={message.role === "user"}
                 >
-                  <!-- Display images if present -->
+                  <!-- Display images if present - Updated styling for better aspect ratio -->
                   {#if message.images?.length}
                     <div class="flex flex-wrap gap-2 mb-2 w-full">
                       {#each message.images as img}
-                        <img
-                          src={img.url}
-                          alt="User uploaded content"
-                          class="w-32 h-32 object-cover rounded-lg"
-                        />
+                        <div class="chat-image-container">
+                          <img
+                            src={img.url}
+                            alt="User uploaded content"
+                            class="chat-image"
+                          />
+                        </div>
                       {/each}
                     </div>
                   {/if}
@@ -291,6 +293,28 @@
   .input-div:empty::before {
     content: attr(data-placeholder);
     color: #a3a3a3;
+  }
+
+  /* Added styles for chat images that preserve aspect ratio with min/max constraints */
+  .chat-image-container {
+    min-width: 120px;
+    min-height: 120px;
+    max-width: 300px;
+    max-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-image {
+    border-radius: 0.5rem;
+    object-fit: contain;
+    max-width: 100%;
+    max-height: 300px;
+    min-width: 80px;
+    min-height: 80px;
+    width: auto;
+    height: auto;
   }
 
   ::-webkit-scrollbar {
