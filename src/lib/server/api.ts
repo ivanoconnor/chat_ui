@@ -37,7 +37,11 @@ export class ChatGPTService {
         }
 
         if (message.images?.length) {
-          userContent.push(...message.images.map((img) => ({ type: "input_image", image_url: img.url, detail: img.detail } as ResponseInputImage)));
+          userContent.push(...message.images.map((img) => ({
+            type: "input_image",
+            image_url: img.url,
+            detail: img.detail
+          } as ResponseInputImage)));
         }
 
         if (userContent.length === 0) {
@@ -50,8 +54,6 @@ export class ChatGPTService {
       }
 
     });
-
-    // Convert stored messages to format expected by responses API
 
     const model = ALL_MODELS.find((m) => m.id === modelIdentifier);
 

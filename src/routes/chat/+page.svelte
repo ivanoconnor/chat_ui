@@ -2,15 +2,17 @@
   import { ChatGPTClient } from "$lib/client";
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
   import Toast from "$lib/components/Toast.svelte";
-  import { type Message, ALL_MODELS } from "$lib/types";
+  import { ALL_MODELS, type Image, type Message } from "$lib/types";
   import { onMount, tick } from "svelte";
 
   let inputMessage = $state("");
   const messages: Message[] = $state([ChatGPTClient.buildSystemMessage()]);
   const client = new ChatGPTClient();
   let selectedModel = $state(client.DEFAULT_MODEL);
+  let attachedImages: Image[] = $state([]);
 
   let textInputElement: HTMLDivElement;
+  let fileInputElement: HTMLInputElement;
 
   // Toast state
   let toastVisible = $state(false);
@@ -19,9 +21,19 @@
   async function sendMessage() {
     const trimmed = inputMessage.trim();
 
-    if (trimmed === "") return; // todo allow empty if imgs are present
+    if (trimmed === "" && attachedImages.length === 0) return;
 
-    messages.push({ text: trimmed, role: "user" });
+    const userMessage: Message = {
+      text: trimmed,
+      role: "user",
+    };
+
+    if (attachedImages.length > 0) {
+      userMessage.images = [...attachedImages];
+      attachedImages = [];
+    }
+
+    messages.push(userMessage);
     inputMessage = "";
     await tick();
     scrollChatToBottom();
@@ -52,6 +64,40 @@
 
   function hideToast() {
     toastVisible = false;
+  }
+
+  async function handleImageUpload(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    try {
+      for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        if (file.type.startsWith("image/")) {
+          const dataUrl = await ChatGPTClient.createImageDataURL(file);
+          attachedImages = [
+            ...attachedImages,
+            { url: dataUrl, detail: "auto" },
+          ];
+        }
+      }
+
+      // Reset the file input
+      if (fileInputElement) {
+        fileInputElement.value = "";
+      }
+
+      toastMessage = "Image attached";
+      toastVisible = true;
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      toastMessage = "Failed to upload image";
+      toastVisible = true;
+    }
+  }
+
+  function removeAttachedImage(index: number) {
+    attachedImages = attachedImages.filter((_, i) => i !== index);
   }
 
   onMount(() => {
@@ -86,18 +132,21 @@
                   class="flex flex-col items-center rounded-xl py-2 px-4"
                   class:bg-neutral-700={message.role === "user"}
                 >
-                  <!-- todo fix to allow messages with images AND text -->
+                  <!-- Display images if present -->
                   {#if message.images?.length}
-                    <div class="flex flex-row gap-2 mb-4 w-full sm:w-3/4">
+                    <div class="flex flex-wrap gap-2 mb-2 w-full">
                       {#each message.images as img}
                         <img
                           src={img.url}
                           alt="User uploaded content"
-                          class="w-32 h-32 rounded-lg"
+                          class="w-32 h-32 object-cover rounded-lg"
                         />
                       {/each}
                     </div>
-                  {:else}
+                  {/if}
+
+                  <!-- Display text if present -->
+                  {#if message.text?.trim()}
                     <div class="text-white leading-loose">
                       <ResponseMessage {message} />
                     </div>
@@ -111,6 +160,29 @@
         <!-- spacer -->
         <div class="p-2 sm:p-4"></div>
       </div>
+
+      <!-- Image preview area -->
+      {#if attachedImages.length > 0}
+        <div class="w-full sm:w-3/4 self-center px-4 mb-2">
+          <div class="flex flex-wrap gap-2 bg-neutral-700 p-3 rounded-xl">
+            {#each attachedImages as img, index}
+              <div class="relative">
+                <img
+                  src={img.url}
+                  alt="Uploaded file preview"
+                  class="w-24 h-24 object-cover rounded-lg"
+                />
+                <button
+                  class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                  onclick={() => removeAttachedImage(index)}
+                >
+                  ×
+                </button>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
 
       <div
         class="w-full sm:w-3/4 self-center mb-4 sm:mb-8 flex flex-row items-center px-4 justify-center gap-2"
@@ -135,16 +207,46 @@
             />
           </svg>
         </button>
+
+        <!-- Hidden file input -->
+        <input
+          type="file"
+          accept="image/png, image/jpeg, image/webp, image/gif"
+          class="hidden"
+          multiple
+          bind:this={fileInputElement}
+          onchange={handleImageUpload}
+        />
+
         <div
           class="bg-neutral-700 rounded-[28px] p-4 flex-grow flex flex-row items-center relative"
         >
+          <!-- Image attachment button -->
+          <button
+            aria-label="Attach image"
+            class="group bg-transparent hover:bg-neutral-600 rounded-full w-8 h-8 flex items-center justify-center absolute left-3 top-3 p-1.5"
+            onclick={() => fileInputElement?.click()}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 384 512"
+              fill="currentColor"
+              class="fill-neutral-400 w-full h-full"
+            >
+              <path
+                d="M64 0C28.7 0 0 28.7 0 64L0 448c0 35.3 28.7 64 64 64l256 0c35.3 0 64-28.7 64-64l0-288-128 0c-17.7 0-32-14.3-32-32L224 0 64 0zM256 0l0 128 128 0L256 0zM64 256a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm152 32c5.3 0 10.2 2.6 13.2 6.9l88 128c3.4 4.9 3.7 11.3 1 16.5s-8.2 8.6-14.2 8.6l-88 0-40 0-48 0-48 0c-5.8 0-11.1-3.1-13.9-8.1s-2.8-11.2 .2-16.1l48-80c2.9-4.8 8.1-7.8 13.7-7.8s10.8 2.9 13.7 7.8l12.8 21.4 48.3-70.2c3-4.3 7.9-6.9 13.2-6.9z"
+              />
+            </svg>
+          </button>
+
           <!-- svelte-ignore a11y_autofocus -->
           <div
             contenteditable="plaintext-only"
             autofocus
             role="textbox"
             tabindex="0"
-            class="pl-1 pr-8 text-white h-full focus:outline-none input-div inline-block max-h-64 overflow-y-auto w-full"
+            class="pl-8 pr-8 text-white h-full focus:outline-none input-div
+            inline-block max-h-64 overflow-y-auto w-full max-w-full text-wrap"
             bind:this={textInputElement}
             bind:innerText={inputMessage}
             data-placeholder="Type a message..."
