@@ -96,6 +96,42 @@
     }
   }
 
+  async function handlePaste(event: ClipboardEvent) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    
+    let hasImage = false;
+    
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        hasImage = true;
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            const dataUrl = await ChatGPTClient.createImageDataURL(file);
+            attachedImages = [
+              ...attachedImages,
+              { url: dataUrl, detail: "auto" },
+            ];
+            
+            toastMessage = "Image pasted";
+            toastVisible = true;
+          } catch (error) {
+            console.error("Error processing pasted image:", error);
+            toastMessage = "Failed to process pasted image";
+            toastVisible = true;
+          }
+        }
+      }
+    }
+    
+    // Let the paste event continue only if no images were found
+    // This prevents pasting image representation into the text
+    if (hasImage) {
+      event.preventDefault();
+    }
+  }
+
   function removeAttachedImage(index: number) {
     attachedImages = attachedImages.filter((_, i) => i !== index);
   }
@@ -118,23 +154,23 @@
       >
         {#each messages as message, i}
           {#if !["system", "developer"].includes(message.role)}
-            <div
-              class="flex flex-row gap-2 mb-4 w-full sm:w-3/4"
-              class:justify-end={message.role === "user"}
-              class:justify-start={message.role !== "user"}
-            >
+            <!-- Display images first if present -->
+            {#if message.images?.length}
               <div
-                class="flex flex-col items-center"
-                class:items-end={message.role === "user"}
-                class:items-start={message.role !== "user"}
+                class="flex flex-row gap-2 mb-1 w-full sm:w-3/4"
+                class:justify-end={message.role === "user"}
+                class:justify-start={message.role !== "user"}
               >
                 <div
-                  class="flex flex-col items-center rounded-xl py-2 px-4"
-                  class:bg-neutral-700={message.role === "user"}
+                  class="flex flex-col items-center"
+                  class:items-end={message.role === "user"}
+                  class:items-start={message.role !== "user"}
                 >
-                  <!-- Display images if present - Updated styling for better aspect ratio -->
-                  {#if message.images?.length}
-                    <div class="flex flex-wrap gap-2 mb-2 w-full">
+                  <div
+                    class="flex flex-col items-center rounded-xl py-2 px-4"
+                    class:bg-neutral-700={message.role === "user"}
+                  >
+                    <div class="flex flex-wrap gap-2 w-full">
                       {#each message.images as img}
                         <div class="chat-image-container">
                           <img
@@ -145,17 +181,36 @@
                         </div>
                       {/each}
                     </div>
-                  {/if}
+                  </div>
+                </div>
+              </div>
+            {/if}
 
-                  <!-- Display text if present -->
-                  {#if message.text?.trim()}
+            <!-- Display text in a separate bubble if present -->
+            {#if message.text?.trim()}
+              <div
+                class="flex flex-row gap-2 mb-4 w-full sm:w-3/4"
+                class:justify-end={message.role === "user"}
+                class:justify-start={message.role !== "user"}
+                class:mb-1={i < messages.length - 1 &&
+                  messages[i + 1].role === message.role}
+              >
+                <div
+                  class="flex flex-col items-center"
+                  class:items-end={message.role === "user"}
+                  class:items-start={message.role !== "user"}
+                >
+                  <div
+                    class="flex flex-col items-center rounded-xl py-2 px-4"
+                    class:bg-neutral-700={message.role === "user"}
+                  >
                     <div class="text-white leading-loose">
                       <ResponseMessage {message} />
                     </div>
-                  {/if}
+                  </div>
                 </div>
               </div>
-            </div>
+            {/if}
           {/if}
         {/each}
 
@@ -252,6 +307,7 @@
             bind:this={textInputElement}
             bind:innerText={inputMessage}
             data-placeholder="Type a message..."
+            onpaste={handlePaste}
             onkeydown={(e) => {
               // todo enter shouldn't send message on touch devices
               if (e.key === "Enter" && !e.shiftKey) {
