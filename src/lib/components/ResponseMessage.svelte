@@ -10,28 +10,35 @@
   let renderedText = $state("");
   let isHovered = $state(false);
 
-  async function renderTex(html: Promise<string> | string) {
-    return (await html)
-      .replace(/\\\((.*?)\\\)/g, (_, match) => {
-        return katex.renderToString(match, {
-          throwOnError: false,
-          displayMode: false,
-          output: "mathml",
-        });
-      })
-      .replace(/\\\[((.|\n)*?)\\\]/g, (_, match) => {
-        return katex.renderToString(match, {
-          throwOnError: false,
-          displayMode: true,
-          output: "mathml",
-        });
-      });
-  }
-
   async function processMessage(text: string) {
     try {
-      const texRendered = await renderTex(text);
+      // Store LaTeX expressions with unique identifiers
+      const latexExpressions = {
+        display: [] as string[],
+        inline: [] as string[],
+      };
 
+      // Replace display LaTeX with placeholders
+      let processedText = text.replace(
+        /\\\[((.|\n)*?)\\\]/g,
+        (match, content) => {
+          const id = `LATEX_DISPLAY_${latexExpressions.display.length}`;
+          latexExpressions.display.push(content);
+          return id;
+        },
+      );
+
+      // Replace inline LaTeX with placeholders
+      processedText = processedText.replace(
+        /\\\((.*?)\\\)/g,
+        (match, content) => {
+          const id = `LATEX_INLINE_${latexExpressions.inline.length}`;
+          latexExpressions.inline.push(content);
+          return id;
+        },
+      );
+
+      // Process markdown
       const markedRenderer = new marked.Renderer();
       markedRenderer.checkbox = (props: { checked: boolean }) => {
         return `<input type="checkbox" ${props.checked ? "checked" : ""}>`;
@@ -40,12 +47,37 @@
         return `<pre class="code-container"><code class="language-${lang}">${text}</code></pre>`;
       };
 
-      const markedResult = await marked(texRendered, {
+      const markedResult = await marked(processedText, {
         breaks: true,
         renderer: markedRenderer,
       });
 
-      renderedText = DOMPurify.sanitize(markedResult);
+      // Replace placeholders with rendered LaTeX
+      let finalResult = markedResult;
+
+      // Replace display LaTeX placeholders
+      latexExpressions.display.forEach((latex, index) => {
+        const placeholder = `LATEX_DISPLAY_${index}`;
+        const rendered = katex.renderToString(latex, {
+          throwOnError: false,
+          displayMode: true,
+          output: "mathml",
+        });
+        finalResult = finalResult.replace(placeholder, rendered);
+      });
+
+      // Replace inline LaTeX placeholders
+      latexExpressions.inline.forEach((latex, index) => {
+        const placeholder = `LATEX_INLINE_${index}`;
+        const rendered = katex.renderToString(latex, {
+          throwOnError: false,
+          displayMode: false,
+          output: "mathml",
+        });
+        finalResult = finalResult.replace(placeholder, rendered);
+      });
+
+      renderedText = DOMPurify.sanitize(finalResult);
 
       await tick();
       hljs.highlightAll();
@@ -118,7 +150,7 @@
   {@html renderedText}
 
   {#if message.role === "assistant"}
-    <div 
+    <div
       class="message-footer flex flex-row items-center gap-2 mt-1 transition-opacity duration-200"
       class:opacity-0={!isHovered}
       class:opacity-100={isHovered}
@@ -128,7 +160,7 @@
           {message.modelId}
         </div>
       {/if}
-      
+
       <button
         onclick={copyAsMarkdown}
         class="text-xs bg-neutral-700 hover:bg-neutral-600 text-white py-1 px-2 rounded flex items-center gap-1"
@@ -139,12 +171,13 @@
           viewBox="0 0 384 512"
           fill="currentColor"
           class="h-3 w-3"
-        ><path
-          d="M214.6 470.6c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-9.2-9.2-11.9-22.9-6.9-34.9s16.6-19.8 29.6-19.8l96 0 0-184c0-22.1 17.9-40 40-40l48 0c22.1 0 40 17.9 40 40l0 184 96 0c12.9 0 24.6 7.8 29.6 19.8s2.2 25.7-6.9 34.9l-160 160z"
-        /></svg>
+          ><path
+            d="M214.6 470.6c-12.5 12.5-32.8 12.5-45.3 0l-160-160c-9.2-9.2-11.9-22.9-6.9-34.9s16.6-19.8 29.6-19.8l96 0 0-184c0-22.1 17.9-40 40-40l48 0c22.1 0 40 17.9 40 40l0 184 96 0c12.9 0 24.6 7.8 29.6 19.8s2.2 25.7-6.9 34.9l-160 160z"
+          /></svg
+        >
         MD
       </button>
-      
+
       <button
         onclick={copyWithFormatting}
         class="text-xs bg-neutral-700 hover:bg-neutral-600 text-white py-1 px-2 rounded flex items-center gap-1"
