@@ -12,7 +12,6 @@ import type {
 
 export class ChatGPTService {
   private readonly openai: OpenAI;
-  // private readonly messages: Array<ResponseInputItem> = [];
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({ apiKey });
