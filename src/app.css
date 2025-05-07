@@ -2,11 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-pre code.hljs {
+/* pre code.hljs {
   display: block;
-  /* overflow-x: auto; */
+  overflow-x: auto;
   padding: 1em
-}
+} */
 code.hljs {
   padding: 3px 5px
 }

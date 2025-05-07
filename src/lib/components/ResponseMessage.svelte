@@ -44,7 +44,7 @@
         return `<input type="checkbox" ${props.checked ? "checked" : ""}>`;
       };
       markedRenderer.code = ({ text, lang, escaped }) => {
-        return `<pre class="code-container"><code class="language-${lang}">${text}</code></pre>`;
+        return `<pre class="code-container"><div class="flex items-center px-4 py-2 text-xs font-sans justify-between h-9 select-none bg-neutral-900 relative left-0 sticky">${lang || "text"}</div><code class="language-${lang}">${text}</code></pre>`;
       };
 
       const markedResult = await marked(processedText, {
@@ -142,7 +142,7 @@
 </script>
 
 <div
-  class="markdown flex flex-col gap-4 w-full max-w-full relative group"
+  class="markdown flex flex-col gap-4 max-w-full relative group"
   role="region"
   onmouseenter={() => (isHovered = true)}
   onmouseleave={() => (isHovered = false)}
@@ -304,28 +304,26 @@
 
   .markdown :global(.code-container) {
     background-color: black;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
     border-radius: 0.375rem;
     font-size: 0.875rem;
     line-height: 1.5rem;
     display: block;
-    border: 1px solid rgba(255, 255, 255, 0.2);
     max-width: 100%;
     overflow-x: auto;
-    white-space: pre;
+    scrollbar-color: #171717 transparent;
+    /* white-space: pre; */
   }
 
-  .markdown :global(.code-container code) {
+  /* .markdown :global(.code-container code) {
     display: inline;
-    /* width: max-content; */
-  }
+  } */
 
   .markdown :global(code[class*="language"]) {
     background-color: black;
-    padding: 0px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
   }
 
   :global(math[display="block"]) {

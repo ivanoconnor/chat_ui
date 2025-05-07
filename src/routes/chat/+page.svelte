@@ -99,11 +99,11 @@
   async function handlePaste(event: ClipboardEvent) {
     const items = event.clipboardData?.items;
     if (!items) return;
-    
+
     let hasImage = false;
-    
+
     for (const item of Array.from(items)) {
-      if (item.type.startsWith('image/')) {
+      if (item.type.startsWith("image/")) {
         hasImage = true;
         const file = item.getAsFile();
         if (file) {
@@ -113,7 +113,7 @@
               ...attachedImages,
               { url: dataUrl, detail: "auto" },
             ];
-            
+
             toastMessage = "Image pasted";
             toastVisible = true;
           } catch (error) {
@@ -124,7 +124,7 @@
         }
       }
     }
-    
+
     // Let the paste event continue only if no images were found
     // This prevents pasting image representation into the text
     if (hasImage) {
@@ -162,15 +162,15 @@
                 class:justify-start={message.role !== "user"}
               >
                 <div
-                  class="flex flex-col items-center"
+                  class="flex flex-col items-center max-w-full"
                   class:items-end={message.role === "user"}
                   class:items-start={message.role !== "user"}
                 >
                   <div
-                    class="flex flex-col items-center rounded-xl py-2 px-4"
+                    class="flex flex-col items-center rounded-xl py-2 px-4 max-w-full"
                     class:bg-neutral-700={message.role === "user"}
                   >
-                    <div class="flex flex-wrap gap-2 w-full">
+                    <div class="flex flex-wrap gap-2 max-w-full">
                       {#each message.images as img}
                         <div class="chat-image-container">
                           <img
@@ -196,15 +196,15 @@
                   messages[i + 1].role === message.role}
               >
                 <div
-                  class="flex flex-col items-center"
+                  class="flex flex-col items-center max-w-full"
                   class:items-end={message.role === "user"}
                   class:items-start={message.role !== "user"}
                 >
                   <div
-                    class="flex flex-col items-center rounded-xl py-2 px-4"
+                    class="flex flex-col items-center rounded-xl py-2 px-4 max-w-full"
                     class:bg-neutral-700={message.role === "user"}
                   >
-                    <div class="text-white leading-loose">
+                    <div class="text-white leading-loose max-w-full">
                       <ResponseMessage {message} />
                     </div>
                   </div>
