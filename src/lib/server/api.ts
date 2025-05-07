@@ -66,7 +66,7 @@ export class ChatGPTService {
       input: conversation,
       // Optional parameters could be added here:
       // stream: false,
-      // store: true
+      store: false
     });
 
     // Access response text using the output_text convenience property
