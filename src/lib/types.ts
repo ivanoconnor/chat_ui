@@ -45,7 +45,7 @@ export class o3mini implements Model {
 };
 
 export class gpt45 implements Model {
-  id = 'gpt-4.5';
+  id = 'gpt-4.5-preview';
   name = 'GPT-4.5';
   description = 'Very large model with high creativity. Very expensive, limited research preview';
 };
