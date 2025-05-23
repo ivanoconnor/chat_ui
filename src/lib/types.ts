@@ -1,3 +1,9 @@
+export interface FileAttachment {
+  filename: string;
+  url: string;
+  type: string;
+}
+
 export type Image = {
   url: string;
   detail: "auto" | "low" | "high";
@@ -9,6 +15,7 @@ export type Message = {
   // and are not shown in the UI
   role: "user" | "assistant" | "system" | "developer";
   images?: Image[];
+  files?: FileAttachment[];
   modelId?: string;
 };
 

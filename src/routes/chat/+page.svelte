@@ -2,7 +2,12 @@
   import { ChatGPTClient } from "$lib/client";
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
   import Toast from "$lib/components/Toast.svelte";
-  import { ALL_MODELS, type Image, type Message } from "$lib/types";
+  import {
+    ALL_MODELS,
+    type FileAttachment,
+    type Image,
+    type Message,
+  } from "$lib/types";
   import { onMount, tick } from "svelte";
 
   let inputMessage = $state("");
@@ -10,6 +15,7 @@
   const client = new ChatGPTClient();
   let selectedModel = $state(client.DEFAULT_MODEL);
   let attachedImages: Image[] = $state([]);
+  let attachedFiles: FileAttachment[] = $state([]);
 
   let textInputElement: HTMLDivElement;
   let fileInputElement: HTMLInputElement;
@@ -21,7 +27,12 @@
   async function sendMessage() {
     const trimmed = inputMessage.trim();
 
-    if (trimmed === "" && attachedImages.length === 0) return;
+    if (
+      trimmed === "" &&
+      attachedImages.length === 0 &&
+      attachedFiles.length === 0
+    )
+      return;
 
     const userMessage: Message = {
       text: trimmed,
@@ -31,6 +42,11 @@
     if (attachedImages.length > 0) {
       userMessage.images = [...attachedImages];
       attachedImages = [];
+    }
+
+    if (attachedFiles.length > 0) {
+      userMessage.files = [...attachedFiles];
+      attachedFiles = [];
     }
 
     messages.push(userMessage);
@@ -74,7 +90,7 @@
       for (let i = 0; i < input.files.length; i++) {
         const file = input.files[i];
         if (file.type.startsWith("image/")) {
-          const dataUrl = await ChatGPTClient.createImageDataURL(file);
+          const dataUrl = await ChatGPTClient.createFileDataURL(file);
           attachedImages = [
             ...attachedImages,
             { url: dataUrl, detail: "auto" },
@@ -96,6 +112,46 @@
     }
   }
 
+  async function handleFileUpload(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    try {
+      for (let i = 0; i < input.files.length; i++) {
+        const file = input.files[i];
+        if (file.type.startsWith("image/")) {
+          const dataUrl = await ChatGPTClient.createFileDataURL(file);
+          attachedImages = [
+            ...attachedImages,
+            { url: dataUrl, detail: "auto" },
+          ];
+        } else if (file.type === "application/pdf") {
+          const dataUrl = await ChatGPTClient.createFileDataURL(file);
+          attachedFiles = [
+            ...attachedFiles,
+            {
+              filename: file.name,
+              url: dataUrl,
+              type: file.type,
+            },
+          ];
+        }
+      }
+
+      // Reset the file input
+      if (fileInputElement) {
+        fileInputElement.value = "";
+      }
+
+      toastMessage = "File attached";
+      toastVisible = true;
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toastMessage = "Failed to upload file";
+      toastVisible = true;
+    }
+  }
+
   async function handlePaste(event: ClipboardEvent) {
     const items = event.clipboardData?.items;
     if (!items) return;
@@ -108,7 +164,7 @@
         const file = item.getAsFile();
         if (file) {
           try {
-            const dataUrl = await ChatGPTClient.createImageDataURL(file);
+            const dataUrl = await ChatGPTClient.createFileDataURL(file);
             attachedImages = [
               ...attachedImages,
               { url: dataUrl, detail: "auto" },
@@ -134,6 +190,10 @@
 
   function removeAttachedImage(index: number) {
     attachedImages = attachedImages.filter((_, i) => i !== index);
+  }
+
+  function removeAttachedFile(index: number) {
+    attachedFiles = attachedFiles.filter((_, i) => i !== index);
   }
 
   onMount(() => {
@@ -211,6 +271,49 @@
                 </div>
               </div>
             {/if}
+
+            <!-- File attachments display -->
+            {#if message.files?.length}
+              <div
+                class="flex flex-row gap-2 mb-1 w-full sm:w-3/4"
+                class:justify-end={message.role === "user"}
+                class:justify-start={message.role !== "user"}
+              >
+                <div
+                  class="flex flex-col items-center max-w-full"
+                  class:items-end={message.role === "user"}
+                  class:items-start={message.role !== "user"}
+                >
+                  <div
+                    class="flex flex-col items-center rounded-xl py-2 px-4 max-w-full"
+                    class:bg-neutral-700={message.role === "user"}
+                  >
+                    <div class="flex flex-wrap gap-2 max-w-full">
+                      {#each message.files as file}
+                        <div class="chat-file-container">
+                          <div
+                            class="chat-file p-2 bg-neutral-800 rounded-lg flex items-center"
+                          >
+                            <svg
+                              class="w-5 h-5 mr-2 fill-neutral-400"
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 384 512"
+                            >
+                              <path
+                                d="M0 64C0 28.7 28.7 0 64 0H224V128c0 17.7 14.3 32 32 32H384V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64zm384 64H256V0L384 128z"
+                              />
+                            </svg>
+                            <span class="text-neutral-200 text-sm"
+                              >{file.filename}</span
+                            >
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {/if}
           {/if}
         {/each}
 
@@ -235,6 +338,42 @@
                 >
                   ×
                 </button>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <!-- File preview area -->
+      {#if attachedFiles.length > 0}
+        <div class="w-full sm:w-3/4 self-center px-4 mb-2">
+          <div class="flex flex-wrap gap-2 bg-neutral-700 p-3 rounded-xl">
+            {#each attachedFiles as file, index}
+              <div class="relative">
+                <div
+                  class="w-24 h-24 flex items-center justify-center bg-gray-800 rounded-lg p-2 text-center"
+                >
+                  <div>
+                    <svg
+                      class="w-8 h-8 mx-auto mb-1 fill-neutral-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 384 512"
+                    >
+                      <path
+                        d="M181.9 256.1c-5-16-4.9-46.9-2-46.9 8.4 0 7.6 36.9 2 46.9zm-1.7 47.2c-7.7 20.2-17.3 43.3-28.4 62.7 18.3-7 39-17.2 62.9-21.9-12.7-9.6-24.9-23.4-34.5-40.8zM86.1 428.1c0 .8 13.2-5.4 34.9-40.2-6.7 6.3-16.8 15.8-24.1 26.3-10.7 15.5-11.6 14.2-10.8 13.9zm238.8 8c-.2-17.7-10.5-30.8-21.2-36.3 8.9-.4 16.4 1.8 22.3 5.3 8.5 4.8 9.1 11.9 6 22.2-.2.7-.2 7.8-7.1 8.8zm-9.4-73.2c15.5-6.2 29.2-2.1 47.5-16.4 7.7-6 13.5-13.3 15.9-26.3-8.1-9.1-20.7-3.1-29.9-1.5-23.2 4.1-41.8 24.2-47.7 50.3-1.1 5.1-1.1 13-1.8 19.9h.1c9.7-15.3 13.1-17.8 16-20-.1-.1 3.2-3.2-.1-6zm61.1-15.4c-1-.8-3.3-1.2-4-1.2.6 1.7 3.7 13 5.6 11.9 1.7-1 .9-5.1-1.6-10.7zm-8.7 19.9c-2.3 3.7-6.5 12.1-11.9 8.1-1.3-1 2.6-5.2 2-9.8-.5-4.7-.6-7.8-1.3-9.7-2.3-6.4-7.9-9-13-10.1 1.3 2.5 2.6 10.5.8 18.2-1.3 5.5-2.8 7.8-4.6 8.8-1 .7-2.6 1-3.6-.2-1.2-1.4.5-8.2 2.1-14.2 1.8-6.6 3.1-13.9-.6-19.2-4.2-6.3-12.9-6.5-18.1-6 .3 1.1.5 7.2-2.7 13.6-2.3 4.5-6.1 8-8.5 9.3-2 1.1-3.8 1.2-4.5-.7-.7-1.8 0-8.5 4.5-15.2 3.1-4.6 6.1-7.2 9.1-14.9 3.1-7.9-2-16-8.7-19.8-6.1-3.4-17.5-4.5-27.2.2-14.6 7.1-23 23.5-25 32.8-.4 2 .2 6.4 2.4 7.4 3.6 1.7 5.3-2.3 6-4.2.5-1.5 5.4-18.2 13.9-23.7 5.6-3.6 11.3-2 14 2.9 1.5 2.7 1.3 8.3-.9 13-3.6 7.9-10.3 15.3-10.3 22.5 0 3.5.2 7.2 3.3 9.3 5 3.3 13.7-3.5 17.2-7.7 3.1-3.7 5.1-7.3 6.3-11.5 1 2.8.9 15.6 7.6 16.5 2.9.4 7.2-2.7 9.5-5.1 10.1-10.6 3.8-20.3 8.1-23.3 1.4-1 3.3-.8 4.2.5 1.1 1.7-.3 8.7-1.3 12.7-2.7 11.2-6.6 24.4-.2 33.3 4.7 6.5 10.8 8.9 14.6 9.2 0-8.6 2.4-27.1 13.7-35.8 4.7-3.7 9.5-3.3 13.5.3 3.6 3.2 3.9 7.9 2.4 11-.5 1-2.2 4.2-5.8 7.2 9.7-1.3 16.4 2.7 20.2 7.7 2.7-1.1 8.1-5 9.2-8.1"
+                      />
+                    </svg>
+                    <span class="text-xs text-neutral-300 truncate block"
+                      >{file.filename}</span
+                    >
+                  </div>
+                  <button
+                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                    onclick={() => removeAttachedFile(index)}
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             {/each}
           </div>
@@ -268,11 +407,11 @@
         <!-- Hidden file input -->
         <input
           type="file"
-          accept="image/png, image/jpeg, image/webp, image/gif"
+          accept="image/png, image/jpeg, image/webp, image/gif, application/pdf"
           class="hidden"
           multiple
           bind:this={fileInputElement}
-          onchange={handleImageUpload}
+          onchange={handleFileUpload}
         />
 
         <div
@@ -280,7 +419,7 @@
         >
           <!-- Image attachment button -->
           <button
-            aria-label="Attach image"
+            aria-label="Attach file"
             class="group bg-transparent hover:bg-neutral-600 rounded-full w-8 h-8 flex items-center justify-center absolute left-3 top-3 p-1.5"
             onclick={() => fileInputElement?.click()}
           >

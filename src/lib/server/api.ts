@@ -1,6 +1,7 @@
 import { ALL_MODELS, type Message } from "$lib/types";
 import { OpenAI } from "openai";
 import type {
+  ResponseInputFile,
   ResponseInputImage,
   ResponseInputItem,
   ResponseInputMessageContentList,
@@ -43,8 +44,16 @@ export class ChatGPTService {
           } as ResponseInputImage)));
         }
 
+        if (message.files?.length) {
+          userContent.push(...message.files.map((file) => ({
+            type: "input_file",
+            filename: file.filename,
+            file_data: file.url
+          } as ResponseInputFile)));
+        }
+
         if (userContent.length === 0) {
-          throw new Error("Empty prompt and no images provided");
+          throw new Error("Empty prompt and no inputs provided");
         }
 
         conversation.push({ content: userContent, role: "user" } as ResponseInputItem.Message);
