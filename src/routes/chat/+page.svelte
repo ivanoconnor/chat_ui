@@ -490,6 +490,12 @@
     color: #a3a3a3;
   }
 
+  .input-div {
+    white-space: pre-wrap; /* Preserves spaces, only breaks at whitespace */
+    word-break: normal; /* Default breaking behavior - break at word boundaries */
+    overflow-wrap: anywhere; /* Forces very long words to break if needed without expanding container */
+  }
+
   /* Added styles for chat images that preserve aspect ratio with min/max constraints */
   .chat-image-container {
     min-width: 120px;
