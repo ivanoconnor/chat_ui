@@ -420,7 +420,7 @@
           <!-- Image attachment button -->
           <button
             aria-label="Attach file"
-            class="group bg-transparent hover:bg-neutral-600 rounded-full w-8 h-8 flex items-center justify-center absolute left-3 top-3 p-1.5"
+            class="group bg-transparent hover:bg-neutral-600 rounded-full w-8 h-8 flex items-center justify-center absolute left-3 bottom-3 p-1.5"
             onclick={() => fileInputElement?.click()}
           >
             <svg
