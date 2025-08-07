@@ -11,11 +11,22 @@
   import { onMount, tick } from "svelte";
 
   let inputMessage = $state("");
-  const messages: Message[] = $state([ChatGPTClient.buildSystemMessage()]);
   const client = new ChatGPTClient();
   let selectedModel = $state(client.DEFAULT_MODEL);
   let attachedImages: Image[] = $state([]);
   let attachedFiles: FileAttachment[] = $state([]);
+
+  const systemMessage = $derived(
+    ChatGPTClient.buildSystemMessage(
+      ChatGPTClient.getModelById(selectedModel) || ALL_MODELS[0],
+    ),
+  );
+
+  // Initialize messages as empty and use a derived value that includes the system message
+  const userMessages: Message[] = $state([]);
+  
+  // Derived messages that always includes the current system message
+  const messages = $derived([systemMessage, ...userMessages]);
 
   let textInputElement: HTMLDivElement;
   let fileInputElement: HTMLInputElement;
@@ -49,14 +60,14 @@
       attachedFiles = [];
     }
 
-    messages.push(userMessage);
+    userMessages.push(userMessage);
     inputMessage = "";
     await tick();
     scrollChatToBottom();
 
     const response = await client.getResponse(messages, selectedModel);
-    response.modelId = selectedModel; // Set the model ID on the response
-    messages.push(response);
+    response.modelId = selectedModel;
+    userMessages.push(response);
 
     await tick();
     scrollChatToBottom();
@@ -69,10 +80,8 @@
   }
 
   function clearMessages() {
-    if (messages.length > 0) {
-      messages.splice(0, messages.length);
-      // Add the system message back to the beginning of the array
-      messages.push(ChatGPTClient.buildSystemMessage());
+    if (userMessages.length > 0) {
+      userMessages.splice(0, userMessages.length);
     }
     toastMessage = "Messages cleared";
     toastVisible = true;

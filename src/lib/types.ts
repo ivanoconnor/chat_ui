@@ -26,23 +26,10 @@ export interface Model {
   knowledgeCutoff: string;
 };
 
-export class gpt5 implements Model {
-  id = 'gpt-5';
-  name = 'GPT-5 (default)';
-  description = 'Flagship model for coding, reasoning, and agentic tasks';
-  knowledgeCutoff = '2024-10-01';
-}
-
-export class gpt5mini implements Model {
-  id = 'gpt-5-mini';
-  name = 'GPT-5 mini';
-  description = 'Faster, more cost-efficient version of GPT-5';
-  knowledgeCutoff = '2024-05-31';
-};
 
 export class gpt41 implements Model {
   id = 'gpt-4.1';
-  name = 'GPT-4.1';
+  name = 'GPT-4.1 (default)';
   description = 'Recent GPT-4 family model with strong instruction following and world knowledge';
   knowledgeCutoff = '2024-06-01';
 };
@@ -54,11 +41,11 @@ export class gpt41mini implements Model {
   knowledgeCutoff = '2024-06-01';
 };
 
-export class gpt4o implements Model {
-  id = 'gpt-4o';
-  name = 'GPT-4o';
-  description = 'High-intelligence flagship model for complex, multi-step tasks';
-  knowledgeCutoff = '2023-10-01';
+export class o3 implements Model {
+  id = 'o3';
+  name = 'o3';
+  description = 'Most powerful reasoning model with advanced capabilities';
+  knowledgeCutoff = '2024-06-01';
 };
 
 export class o4mini implements Model {
@@ -68,20 +55,34 @@ export class o4mini implements Model {
   knowledgeCutoff = '2024-06-01';
 };
 
-export class o3 implements Model {
-  id = 'o3';
-  name = 'o3';
-  description = 'Most powerful reasoning model with advanced capabilities';
-  knowledgeCutoff = '2024-06-01';
+export class gpt5 implements Model {
+  id = 'gpt-5';
+  name = 'GPT-5';
+  description = 'Flagship model for coding, reasoning, and agentic tasks';
+  knowledgeCutoff = '2024-10-01';
+}
+
+export class gpt5mini implements Model {
+  id = 'gpt-5-mini';
+  name = 'GPT-5 mini';
+  description = 'Faster, more cost-efficient version of GPT-5';
+  knowledgeCutoff = '2024-05-31';
+};
+
+export class gpt4o implements Model {
+  id = 'gpt-4o';
+  name = 'GPT-4o';
+  description = 'High-intelligence flagship model for complex, multi-step tasks';
+  knowledgeCutoff = '2023-10-01';
 };
 
 
 export const ALL_MODELS: Model[] = [
-  new gpt5(),
-  new gpt5mini(),
   new gpt41(),
   new gpt41mini(),
   new o3(),
   new o4mini(),
+  new gpt5(),
+  new gpt5mini(),
   new gpt4o(),
 ];
