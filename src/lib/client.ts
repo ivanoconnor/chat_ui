@@ -1,17 +1,27 @@
 import { SystemPrompts } from "./systemPrompts";
-import type { Message } from "./types";
+import { ALL_MODELS, type Message, type Model } from "./types";
 
 export class ChatGPTClient {
   private readonly apiUrl = 'http://localhost:5173/api';
-  public readonly DEFAULT_MODEL = 'gpt-4.1';
+  public readonly DEFAULT_MODEL = 'gpt-5';
+  private readonly modelsMap: Record<string, Model> = ALL_MODELS.reduce((acc, model) => {
+    acc[model.id] = model;
+    return acc;
+  }, {} as Record<string, Model>);
 
   constructor() { }
 
-  public static buildSystemMessage(): Message {
+  public static buildSystemMessage(model: Model): Message {
+    const text = SystemPrompts.STEMAssistant.replace('<MODEL_KNOWLEDGE_CUTOFF>', model.knowledgeCutoff);
+
     return {
-      text: SystemPrompts.STEMAssistant,
+      text: text,
       role: "system"
     };
+  }
+
+  public static getModelById(modelId: string): Model | undefined {
+    return ALL_MODELS.find(model => model.id === modelId);
   }
 
   public static createFileDataURL(file: File): Promise<string> {
