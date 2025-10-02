@@ -3,10 +3,10 @@
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import {
-    ALL_MODELS,
-    type FileAttachment,
-    type Image,
-    type Message,
+      ALL_MODELS,
+      type FileAttachment,
+      type Image,
+      type Message,
   } from "$lib/types";
   import { onMount, tick } from "svelte";
 
@@ -32,10 +32,14 @@
 
   let textInputElement: HTMLDivElement;
   let fileInputElement: HTMLInputElement;
+  let chatContainer: HTMLDivElement;
 
   // Toast state
   let toastVisible = $state(false);
   let toastMessage = $state("");
+
+  // Detect if user is on a touch device
+  let isTouchDevice = $state(false);
 
   async function sendMessage() {
     const trimmed = inputMessage.trim();
@@ -65,7 +69,7 @@
     userMessages.push(userMessage);
     inputMessage = "";
     await tick();
-    scrollChatToBottom();
+    scrollChatToBottom(false);
 
     // Create a placeholder message for the assistant response
     const assistantMessage: Message = {
@@ -92,7 +96,10 @@
         // Trigger reactivity by updating the array reference
         userMessages[messageIndex] = { ...userMessages[messageIndex] };
         await tick();
-        scrollChatToBottom();
+        // Only auto-scroll if user is near the bottom
+        if (isNearBottom()) {
+          scrollChatToBottom();
+        }
       }
     } catch (error: any) {
       if (error.name === "AbortError") {
@@ -115,10 +122,18 @@
     }
   }
 
-  function scrollChatToBottom() {
-    // todo if scrolled up more than (?) don't scroll to bottom
-    const chat = document.querySelector(".chat");
-    if (chat) chat.scrollTop = chat.scrollHeight;
+  function isNearBottom(threshold = 100): boolean {
+    if (!chatContainer) return true;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  }
+
+  function scrollChatToBottom(smooth = true) {
+    if (!chatContainer) return;
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: smooth ? "smooth" : "instant",
+    });
   }
 
   function clearMessages() {
@@ -248,6 +263,12 @@
   }
 
   onMount(() => {
+    // Detect touch device capability
+    isTouchDevice =
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      (navigator as any).msMaxTouchPoints > 0;
+
     scrollChatToBottom();
   });
 </script>
@@ -262,6 +283,7 @@
     <div class="flex flex-col h-full w-full">
       <div
         class="flex flex-col flex-grow p-4 chat overflow-y-auto items-center"
+        bind:this={chatContainer}
       >
         {#each messages as message, i}
           {#if !["system", "developer"].includes(message.role)}
@@ -499,10 +521,13 @@
             data-placeholder="Type a message..."
             onpaste={handlePaste}
             onkeydown={(e) => {
-              // todo enter shouldn't send message on touch devices
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+              if (e.key === "Enter") {
+                // On touch devices: Enter always creates a new line
+                // On desktop: Enter sends (unless Shift is held for new line)
+                if (!isTouchDevice && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
               }
             }}
           ></div>
@@ -513,7 +538,12 @@
           >
             {#if isStreaming}
               <!-- Stop icon (solid square) -->
-              <svg viewBox="0 0 448 512" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                viewBox="0 0 448 512"
+                width="16"
+                height="16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <path
                   d="M384 32c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96C0 60.7 28.7 32 64 32l320 0z"
                 />
@@ -577,6 +607,10 @@
     min-height: 80px;
     width: auto;
     height: auto;
+  }
+
+  .chat {
+    scroll-behavior: smooth;
   }
 
   ::-webkit-scrollbar {
