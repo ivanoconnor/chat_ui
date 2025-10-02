@@ -37,7 +37,7 @@ export class gpt41 implements Model {
 export class gpt41mini implements Model {
   id = 'gpt-4.1-mini';
   name = 'GPT-4.1 mini';
-  description = 'Small multimodal model. Cheapest and fastest option';
+  description = 'Small multimodal model, fastest option';
   knowledgeCutoff = '2024-06-01';
 };
 
