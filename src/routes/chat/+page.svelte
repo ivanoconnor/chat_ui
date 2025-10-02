@@ -41,6 +41,18 @@
   // Detect if user is on a touch device
   let isTouchDevice = $state(false);
 
+  // Model selector modal state
+  let isModelSelectorOpen = $state(false);
+
+  function toggleModelSelector() {
+    isModelSelectorOpen = !isModelSelectorOpen;
+  }
+
+  function selectModel(modelId: string) {
+    selectedModel = modelId;
+    isModelSelectorOpen = false;
+  }
+
   async function sendMessage() {
     const trimmed = inputMessage.trim();
 
@@ -279,6 +291,64 @@
       <Toast message={toastMessage} duration={5000} sendClose={hideToast} />
     </div>
   {/if}
+
+  <!-- Model selector modal for small screens -->
+  {#if isModelSelectorOpen}
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end sm:hidden"
+      onclick={toggleModelSelector}
+      onkeydown={(e) => {
+        if (e.key === "Escape") {
+          toggleModelSelector();
+        }
+      }}
+      role="dialog"
+      tabindex="-1"
+    >
+      <div
+        class="bg-neutral-800 w-full rounded-t-2xl p-4 max-h-[70vh] overflow-y-auto"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
+        role="presentation"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-white text-lg font-semibold">Select Model</h2>
+          <button
+            aria-label="Close model selector"
+            class="text-neutral-400 hover:text-white"
+            onclick={toggleModelSelector}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 384 512"
+              class="w-6 h-6 fill-current"
+            >
+              <path
+                d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-2">
+          {#each ALL_MODELS as model}
+            <button
+              class="w-full text-left p-4 rounded-lg transition-colors"
+              class:bg-neutral-700={selectedModel === model.id}
+              class:bg-neutral-900={selectedModel !== model.id}
+              class:hover:bg-neutral-700={selectedModel !== model.id}
+              onclick={() => selectModel(model.id)}
+            >
+              <div class="text-white font-medium">{model.name}</div>
+              <div class="text-neutral-400 text-sm mt-1">
+                {model.description}
+              </div>
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <div class="w-full flex flex-col">
     <div class="flex flex-col h-full w-full">
       <div
@@ -396,7 +466,7 @@
 
       <!-- Image preview area -->
       {#if attachedImages.length > 0}
-        <div class="w-full sm:w-3/4 self-center px-4 mb-2">
+        <div class="w-full max-w-[1000px] self-center px-4 mb-2">
           <div class="flex flex-wrap gap-2 bg-neutral-700 p-3 rounded-xl">
             {#each attachedImages as img, index}
               <div class="relative">
@@ -419,7 +489,7 @@
 
       <!-- File preview area -->
       {#if attachedFiles.length > 0}
-        <div class="w-full sm:w-3/4 self-center px-4 mb-2">
+        <div class="w-full max-w-[1000px] self-center px-4 mb-2">
           <div class="flex flex-wrap gap-2 bg-neutral-700 p-3 rounded-xl">
             {#each attachedFiles as file, index}
               <div class="relative">
@@ -454,12 +524,12 @@
       {/if}
 
       <div
-        class="w-full sm:w-3/4 self-center mb-4 sm:mb-8 flex flex-row items-center px-4 justify-center gap-2"
+        class="w-full max-w-[1000px] self-center mb-4 sm:mb-8 flex flex-row items-center px-4 justify-center gap-2"
       >
         <button
           aria-label="Clear chat messages"
           class="bg-transparent hover:bg-neutral-700 fill-neutral-600 hover:fill-neutral-400
-          w-14 h-14 p-2.5 rounded-full mt-auto flex-shrink-0"
+          w-12 h-12 sm:w-14 sm:h-14 p-2.5 rounded-full mt-auto mb-1 sm:mb-0 flex-shrink-0"
           onclick={clearMessages}
         >
           <svg
@@ -558,8 +628,26 @@
             {/if}
           </button>
         </div>
+        <!-- Model selector button for small screens -->
+        <button
+          aria-label="Select model"
+          class="mb-1 sm:hidden bg-transparent text-white rounded-full w-12 h-12 mt-auto p-2.5 flex items-center justify-center hover:bg-neutral-600 flex-shrink-0"
+          onclick={toggleModelSelector}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+            class="w-6 h-6 fill-neutral-600 hover:fill-neutral-400"
+          >
+            <path
+              d="M78.6 5C69.1-2.4 55.6-1.5 47 7L7 47c-8.5 8.5-9.4 22-2.1 31.6l80 104c4.5 5.9 11.6 9.4 19 9.4l54.1 0 109 109c-14.7 29-10 65.4 14.3 89.6l112 112c12.5 12.5 32.8 12.5 45.3 0l64-64c12.5-12.5 12.5-32.8 0-45.3l-112-112c-24.2-24.2-60.6-29-89.6-14.3l-109-109 0-54.1c0-7.5-3.5-14.5-9.4-19L78.6 5zM19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L233.7 374.3c-7.8-20.9-9-43.6-3.6-65.1l-61.7-61.7L19.9 396.1zM512 144c0-10.5-1.1-20.7-3.2-30.5c-2.4-11.2-16.1-14.1-24.2-6l-63.9 63.9c-3 3-7.1 4.7-11.3 4.7L352 176c-8.8 0-16-7.2-16-16l0-57.4c0-4.2 1.7-8.3 4.7-11.3l63.9-63.9c8.1-8.1 5.2-21.8-6-24.2C388.7 1.1 378.5 0 368 0C288.5 0 224 64.5 224 144l0 .8 85.3 85.3c36-9.1 75.8 .5 104 28.7L429 274.5c49-23 83-72.8 83-130.5zM56 432a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z"
+            />
+          </svg>
+        </button>
+
+        <!-- Full model selector for larger screens -->
         <select
-          class="bg-neutral-700 text-white rounded-xl h-14 mt-auto px-2.5"
+          class="hidden sm:block bg-neutral-700 text-white rounded-xl h-14 mt-auto px-2.5"
           bind:value={selectedModel}
         >
           {#each ALL_MODELS as model}
