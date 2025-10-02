@@ -18,8 +18,33 @@
         inline: [] as string[],
       };
 
-      // Replace display LaTeX with placeholders
+      // Store code blocks with placeholders to preserve them
+      const codeBlocks: string[] = [];
       let processedText = text.replace(
+        /```[\s\S]*?```|`[^`]+`/g,
+        (match) => {
+          const id = `CODE_BLOCK_${codeBlocks.length}`;
+          codeBlocks.push(match);
+          return id;
+        },
+      );
+
+      // Escape HTML entities outside of code blocks
+      processedText = processedText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+      // Restore code blocks
+      codeBlocks.forEach((block, index) => {
+        const placeholder = `CODE_BLOCK_${index}`;
+        processedText = processedText.replace(placeholder, block);
+      });
+
+      // Replace display LaTeX with placeholders
+      processedText = processedText.replace(
         /\\\[((.|\n)*?)\\\]/g,
         (match, content) => {
           const id = `LATEX_DISPLAY_${latexExpressions.display.length}`;
@@ -44,7 +69,14 @@
         return `<input type="checkbox" ${props.checked ? "checked" : ""}>`;
       };
       markedRenderer.code = ({ text, lang, escaped }) => {
-        return `<pre class="code-container"><div class="flex items-center px-4 py-2 text-xs font-sans justify-between h-9 select-none bg-neutral-900 relative left-0 sticky">${lang || "text"}</div><code class="language-${lang}">${text}</code></pre>`;
+        // Escape HTML entities in code blocks to preserve all content
+        const escapedText = text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+        return `<pre class="code-container"><div class="flex items-center px-4 py-2 text-xs font-sans justify-between h-9 select-none bg-neutral-900 relative left-0 sticky">${lang || "text"}</div><code class="language-${lang}">${escapedText}</code></pre>`;
       };
 
       const markedResult = await marked(processedText, {
