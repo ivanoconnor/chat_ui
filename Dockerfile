@@ -13,9 +13,8 @@ RUN yarn install
 # Copy the rest of the application files
 COPY . .
 
-# Expose ports 5173 and 3000
+# Expose port 5173
 EXPOSE 5173
-EXPOSE 3000
 
 # Run the SvelteKit development server
 CMD yarn dev --host 0.0.0.0
