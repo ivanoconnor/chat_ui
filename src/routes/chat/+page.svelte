@@ -114,11 +114,7 @@
         }
       }
     } catch (error: any) {
-      if (error.name === "AbortError") {
-        console.log("Stream was stopped by user");
-        // Keep whatever text was received so far
-      } else {
-        console.error("Error streaming response:", error);
+      if (error.name !== "AbortError") {
         userMessages[messageIndex].text = "Error: Failed to get response";
         userMessages[messageIndex] = { ...userMessages[messageIndex] };
       }
@@ -184,7 +180,9 @@
       toastMessage = "Image attached";
       toastVisible = true;
     } catch (error) {
-      console.error("Error uploading images:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error uploading images:", error);
+      }
       toastMessage = "Failed to upload image";
       toastVisible = true;
     }
@@ -224,7 +222,9 @@
       toastMessage = "File attached";
       toastVisible = true;
     } catch (error) {
-      console.error("Error uploading files:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error uploading files:", error);
+      }
       toastMessage = "Failed to upload file";
       toastVisible = true;
     }
@@ -251,7 +251,9 @@
             toastMessage = "Image pasted";
             toastVisible = true;
           } catch (error) {
-            console.error("Error processing pasted image:", error);
+            if (import.meta.env.DEV) {
+              console.error("Error processing pasted image:", error);
+            }
             toastMessage = "Failed to process pasted image";
             toastVisible = true;
           }

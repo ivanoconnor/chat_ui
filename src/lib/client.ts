@@ -2,7 +2,7 @@ import { SystemPrompts } from "./systemPrompts";
 import { ALL_MODELS, type Message, type Model } from "./types";
 
 export class ChatGPTClient {
-  private readonly apiUrl = 'http://localhost:5173/api';
+  private readonly apiUrl = '/api';
   public readonly DEFAULT_MODEL = 'gpt-4.1';
   private readonly modelsMap: Record<string, Model> = ALL_MODELS.reduce((acc, model) => {
     acc[model.id] = model;

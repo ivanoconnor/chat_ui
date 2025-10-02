@@ -88,3 +88,11 @@ src/
     ├── chat/              # Chat interface
     └── api/chat/          # Chat API endpoint
 ```
+
+## License
+
+This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE).
+
+- ✅ Free to use and modify for personal and educational purposes
+- ✅ Attribution required
+- ❌ Commercial use not permitted without permission
