@@ -15,6 +15,8 @@
   let selectedModel = $state(client.DEFAULT_MODEL);
   let attachedImages: Image[] = $state([]);
   let attachedFiles: FileAttachment[] = $state([]);
+  let isStreaming = $state(false);
+  let abortController: AbortController | null = null;
 
   const systemMessage = $derived(
     ChatGPTClient.buildSystemMessage(
@@ -24,7 +26,7 @@
 
   // Initialize messages as empty and use a derived value that includes the system message
   const userMessages: Message[] = $state([]);
-  
+
   // Derived messages that always includes the current system message
   const messages = $derived([systemMessage, ...userMessages]);
 
@@ -65,12 +67,52 @@
     await tick();
     scrollChatToBottom();
 
-    const response = await client.getResponse(messages, selectedModel);
-    response.modelId = selectedModel;
-    userMessages.push(response);
+    // Create a placeholder message for the assistant response
+    const assistantMessage: Message = {
+      text: "",
+      role: "assistant",
+      modelId: selectedModel,
+    };
+    const messageIndex = userMessages.length;
+    userMessages.push(assistantMessage);
 
-    await tick();
-    scrollChatToBottom();
+    // Set up abort controller for stopping the stream
+    abortController = new AbortController();
+    isStreaming = true;
+
+    try {
+      // Stream the response
+      for await (const delta of client.streamResponse(
+        messages,
+        selectedModel,
+        abortController.signal,
+      )) {
+        // Update the message text
+        userMessages[messageIndex].text += delta;
+        // Trigger reactivity by updating the array reference
+        userMessages[messageIndex] = { ...userMessages[messageIndex] };
+        await tick();
+        scrollChatToBottom();
+      }
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        console.log("Stream was stopped by user");
+        // Keep whatever text was received so far
+      } else {
+        console.error("Error streaming response:", error);
+        userMessages[messageIndex].text = "Error: Failed to get response";
+        userMessages[messageIndex] = { ...userMessages[messageIndex] };
+      }
+    } finally {
+      isStreaming = false;
+      abortController = null;
+    }
+  }
+
+  function stopStreaming() {
+    if (abortController) {
+      abortController.abort();
+    }
   }
 
   function scrollChatToBottom() {
@@ -465,15 +507,25 @@
             }}
           ></div>
           <button
-            aria-label="Send message"
+            aria-label={isStreaming ? "Stop generating" : "Send message"}
             class="bg-white fill-black w-8 h-8 rounded-full absolute right-3 bottom-3 flex items-center justify-center p-2"
-            onclick={sendMessage}
+            onclick={isStreaming ? stopStreaming : sendMessage}
           >
-            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="m 273.46931,39.4 c -4.6,-4.7 -10.8,-7.4 -17.4,-7.4 -6.6,0 -12.8,2.7 -17.4,7.4 l -168.000003,176 c -9.2,9.6 -8.8,24.8 0.8,33.9 9.6,9.1 24.8,8.8 33.900003,-0.8 l 126.7,-132.6 V 456 c 0,13.3 10.7,24 24,24 13.3,0 24,-10.7 24,-24 V 115.9 l 126.6,132.7 c 9.2,9.6 24.3,9.9 33.9,0.8 9.6,-9.1 9.9,-24.3 0.8,-33.9 l -168,-176 z"
-              />
-            </svg>
+            {#if isStreaming}
+              <!-- Stop icon (solid square) -->
+              <svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M384 32c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96C0 60.7 28.7 32 64 32l320 0z"
+                />
+              </svg>
+            {:else}
+              <!-- Send icon (up arrow) -->
+              <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="m 273.46931,39.4 c -4.6,-4.7 -10.8,-7.4 -17.4,-7.4 -6.6,0 -12.8,2.7 -17.4,7.4 l -168.000003,176 c -9.2,9.6 -8.8,24.8 0.8,33.9 9.6,9.1 24.8,8.8 33.900003,-0.8 l 126.7,-132.6 V 456 c 0,13.3 10.7,24 24,24 13.3,0 24,-10.7 24,-24 V 115.9 l 126.6,132.7 c 9.2,9.6 24.3,9.9 33.9,0.8 9.6,-9.1 9.9,-24.3 0.8,-33.9 l -168,-176 z"
+                />
+              </svg>
+            {/if}
           </button>
         </div>
         <select
