@@ -12,7 +12,7 @@ A responsive chat interface built with SvelteKit providing a UI wrapper around t
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/Astrochamp/chat_ui.git
+git clone https://github.com/ivanoconnor/chat_ui.git
 cd chat_ui
 ```
 
