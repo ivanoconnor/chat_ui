@@ -3,10 +3,10 @@
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import {
-      ALL_MODELS,
-      type FileAttachment,
-      type Image,
-      type Message,
+    ALL_MODELS,
+    type FileAttachment,
+    type Image,
+    type Message,
   } from "$lib/types";
   import { onMount, tick } from "svelte";
 
@@ -17,6 +17,7 @@
   let attachedFiles: FileAttachment[] = $state([]);
   let isStreaming = $state(false);
   let abortController: AbortController | null = null;
+  let streamingEnabled = $state(true);
 
   const systemMessage = $derived(
     ChatGPTClient.buildSystemMessage(
@@ -92,26 +93,35 @@
     const messageIndex = userMessages.length;
     userMessages.push(assistantMessage);
 
-    // Set up abort controller for stopping the stream
-    abortController = new AbortController();
-    isStreaming = true;
-
     try {
-      // Stream the response
-      for await (const delta of client.streamResponse(
-        messages,
-        selectedModel,
-        abortController.signal,
-      )) {
-        // Update the message text
-        userMessages[messageIndex].text += delta;
-        // Trigger reactivity by updating the array reference
+      if (streamingEnabled) {
+        // Set up abort controller for stopping the stream
+        abortController = new AbortController();
+        isStreaming = true;
+
+        // Stream the response
+        for await (const delta of client.streamResponse(
+          messages,
+          selectedModel,
+          abortController.signal,
+        )) {
+          // Update the message text
+          userMessages[messageIndex].text += delta;
+          // Trigger reactivity by updating the array reference
+          userMessages[messageIndex] = { ...userMessages[messageIndex] };
+          await tick();
+          // Only auto-scroll if user is near the bottom
+          if (isNearBottom()) {
+            scrollChatToBottom();
+          }
+        }
+      } else {
+        // Non-streaming: get the complete response
+        const response = await client.getResponse(messages, selectedModel);
+        userMessages[messageIndex].text = response.text;
         userMessages[messageIndex] = { ...userMessages[messageIndex] };
         await tick();
-        // Only auto-scroll if user is near the bottom
-        if (isNearBottom()) {
-          scrollChatToBottom();
-        }
+        scrollChatToBottom();
       }
     } catch (error: any) {
       if (error.name !== "AbortError") {
@@ -128,6 +138,14 @@
     if (abortController) {
       abortController.abort();
     }
+  }
+
+  function toggleStreaming() {
+    streamingEnabled = !streamingEnabled;
+    toastMessage = streamingEnabled
+      ? "Streaming enabled"
+      : "Streaming disabled";
+    toastVisible = true;
   }
 
   function isNearBottom(threshold = 100): boolean {
@@ -331,6 +349,56 @@
             </svg>
           </button>
         </div>
+
+        <!-- Streaming toggle in modal -->
+        <div class="mb-4 p-4 bg-neutral-900 rounded-lg">
+          <button
+            class="w-full flex items-center justify-between"
+            onclick={toggleStreaming}
+          >
+            <div class="flex items-center gap-3">
+              {#if streamingEnabled}
+                <svg
+                  viewBox="0 0 448 512"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="fill-blue-400 w-6 h-6"
+                >
+                  <path
+                    d="M349.4 44.6c5.9-13.7 1.5-29.7-10.6-38.5s-28.6-8-39.9 1.8l-256 224c-10 8.8-13.6 22.9-8.9 35.3S50.7 288 64 288H175.5L98.6 467.4c-5.9 13.7-1.5 29.7 10.6 38.5s28.6 8 39.9-1.8l256-224c10-8.8 13.6-22.9 8.9-35.3s-16.6-20.7-30-20.7H272.5L349.4 44.6z"
+                  />
+                </svg>
+              {:else}
+                <svg
+                  viewBox="0 0 320 512"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="fill-neutral-500 w-6 h-6"
+                >
+                  <path
+                    d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"
+                  />
+                </svg>
+              {/if}
+              <div class="text-left">
+                <div class="text-white font-medium">Streaming</div>
+                <div class="text-neutral-400 text-sm">
+                  {streamingEnabled ? "Enabled" : "Disabled"}
+                </div>
+              </div>
+            </div>
+            <div
+              class="w-12 h-7 rounded-full transition-colors relative"
+              class:bg-blue-500={streamingEnabled}
+              class:bg-neutral-700={!streamingEnabled}
+            >
+              <div
+                class="absolute top-0.5 w-6 h-6 bg-white rounded-full transition-transform"
+                class:translate-x-5={streamingEnabled}
+                class:translate-x-0.5={!streamingEnabled}
+              ></div>
+            </div>
+          </button>
+        </div>
+
         <div class="space-y-2">
           {#each ALL_MODELS as model}
             <button
@@ -547,6 +615,39 @@
               id="path1"
             />
           </svg>
+        </button>
+
+        <!-- Streaming toggle button (hidden on small screens) -->
+        <button
+          aria-label={streamingEnabled
+            ? "Disable streaming"
+            : "Enable streaming"}
+          class="hidden sm:flex group bg-transparent hover:bg-neutral-700 w-12 h-12 sm:w-14 sm:h-14 p-2.5 rounded-full mt-auto mb-1 sm:mb-0 flex-shrink-0 relative"
+          onclick={toggleStreaming}
+        >
+          {#if streamingEnabled}
+            <!-- Streaming enabled icon (lightning bolt) -->
+            <svg
+              viewBox="0 0 448 512"
+              xmlns="http://www.w3.org/2000/svg"
+              class="fill-blue-400/30 group-hover:fill-blue-400 w-full h-full group"
+            >
+              <path
+                d="M349.4 44.6c5.9-13.7 1.5-29.7-10.6-38.5s-28.6-8-39.9 1.8l-256 224c-10 8.8-13.6 22.9-8.9 35.3S50.7 288 64 288H175.5L98.6 467.4c-5.9 13.7-1.5 29.7 10.6 38.5s28.6 8 39.9-1.8l256-224c10-8.8 13.6-22.9 8.9-35.3s-16.6-20.7-30-20.7H272.5L349.4 44.6z"
+              />
+            </svg>
+          {:else}
+            <!-- Streaming disabled icon (pause symbol) -->
+            <svg
+              viewBox="0 0 320 512"
+              xmlns="http://www.w3.org/2000/svg"
+              class="fill-neutral-600 group-hover:fill-neutral-400 w-full h-full group"
+            >
+              <path
+                d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"
+              />
+            </svg>
+          {/if}
         </button>
 
         <!-- Hidden file input -->

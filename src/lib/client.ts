@@ -12,7 +12,7 @@ export class ChatGPTClient {
   constructor() { }
 
   public static buildSystemMessage(model: Model): Message {
-    const text = SystemPrompts.STEMAssistant.replace('<MODEL_KNOWLEDGE_CUTOFF>', model.knowledgeCutoff);
+    const text = SystemPrompts.defaultAssistant.replace('<MODEL_KNOWLEDGE_CUTOFF>', model.knowledgeCutoff);
 
     return {
       text: text,

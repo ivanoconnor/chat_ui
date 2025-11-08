@@ -51,7 +51,7 @@ export class o3 implements Model {
 export class o4mini implements Model {
   id = 'o4-mini';
   name = 'o4-mini';
-  description = 'Latest small reasoning model with chain-of-thought capabilities';
+  description = 'Small reasoning model with chain-of-thought capabilities';
   knowledgeCutoff = '2024-06-01';
 };
 
@@ -72,7 +72,7 @@ export class gpt5mini implements Model {
 export class gpt4o implements Model {
   id = 'gpt-4o';
   name = 'GPT-4o';
-  description = 'High-intelligence flagship model for complex, multi-step tasks';
+  description = 'Legacy GPT-4 family model for general purpose use';
   knowledgeCutoff = '2023-10-01';
 };
 
