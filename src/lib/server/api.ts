@@ -1,5 +1,6 @@
 import { ALL_MODELS, type Message } from "$lib/types";
 import { OpenAI } from "openai";
+import type { ReasoningEffort } from "openai/resources.mjs";
 import type {
   ResponseInputFile,
   ResponseInputImage,
@@ -9,6 +10,8 @@ import type {
   ResponseOutputMessage,
   ResponseOutputText
 } from "openai/src/resources/responses/responses.js";
+
+import { Stream } from "openai/streaming.mjs";
 
 
 export class ChatGPTService {
@@ -69,14 +72,20 @@ export class ChatGPTService {
       throw new Error(`Model ${modelIdentifier} not found`);
     }
 
-    // Use the responses API instead of chat.completions
-    const response = await this.openai.responses.create({
+    let opts = {
       model: modelIdentifier,
       input: conversation,
-      // Optional parameters could be added here:
-      // stream: false,
       store: false
-    });
+    } as OpenAI.Responses.ResponseCreateParams;
+
+    if (model.id.includes("gpt-5")) {
+      opts = { ...opts, reasoning: { "effort": model.defaultReasoningLevel as ReasoningEffort } };
+    }
+
+    // Use the responses API instead of chat.completions
+    const response = await this.openai.responses.create(opts) as OpenAI.Responses.Response & {
+      _request_id?: string | null;
+    };
 
     // Access response text using the output_text convenience property
     const responseText = response.output_text;
@@ -142,13 +151,21 @@ export class ChatGPTService {
       throw new Error(`Model ${modelIdentifier} not found`);
     }
 
-    // Use the responses API with streaming enabled
-    const stream = await this.openai.responses.create({
+    let opts = {
       model: modelIdentifier,
       input: conversation,
       stream: true,
       store: false
-    });
+    } as OpenAI.Responses.ResponseCreateParams;
+
+    if (model.id.includes("gpt-5")) {
+      opts = { ...opts, reasoning: { "effort": model.defaultReasoningLevel as ReasoningEffort } };
+    }
+
+    // Use the responses API with streaming enabled
+    const stream = await this.openai.responses.create(opts) as Stream<OpenAI.Responses.ResponseStreamEvent> & {
+      _request_id?: string | null;
+    };
 
     // Yield text deltas as they come in
     for await (const event of stream) {

@@ -20,29 +20,13 @@
 
       // Store code blocks with placeholders to preserve them
       const codeBlocks: string[] = [];
-      let processedText = text.replace(
-        /```[\s\S]*?```|`[^`]+`/g,
-        (match) => {
-          const id = `CODE_BLOCK_${codeBlocks.length}`;
-          codeBlocks.push(match);
-          return id;
-        },
-      );
-
-      // Escape HTML entities outside of code blocks
-      processedText = processedText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-      // Restore code blocks
-      codeBlocks.forEach((block, index) => {
-        const placeholder = `CODE_BLOCK_${index}`;
-        processedText = processedText.replace(placeholder, block);
+      let processedText = text.replace(/```[\s\S]*?```|`[^`]+`/g, (match) => {
+        const id = `CODE_BLOCK_${codeBlocks.length}`;
+        codeBlocks.push(match);
+        return id;
       });
 
+      // Extract LaTeX BEFORE escaping HTML entities
       // Replace display LaTeX with placeholders
       processedText = processedText.replace(
         /\\\[((.|\n)*?)\\\]/g,
@@ -62,6 +46,20 @@
           return id;
         },
       );
+
+      // Escape HTML entities outside of code blocks and LaTeX
+      processedText = processedText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+      // Restore code blocks
+      codeBlocks.forEach((block, index) => {
+        const placeholder = `CODE_BLOCK_${index}`;
+        processedText = processedText.replace(placeholder, block);
+      });
 
       // Process markdown
       const markedRenderer = new marked.Renderer();

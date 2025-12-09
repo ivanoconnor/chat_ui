@@ -24,6 +24,7 @@ export interface Model {
   name: string;
   description: string;
   knowledgeCutoff: string;
+  defaultReasoningLevel?: "minimal" | "low" | "medium" | "high";
 };
 
 
@@ -55,11 +56,12 @@ export class o4mini implements Model {
   knowledgeCutoff = '2024-06-01';
 };
 
-export class gpt5 implements Model {
-  id = 'gpt-5';
-  name = 'GPT-5';
+export class gpt51 implements Model {
+  id = 'gpt-5.1';
+  name = 'GPT-5.1';
   description = 'Flagship model for coding, reasoning, and agentic tasks';
-  knowledgeCutoff = '2024-10-01';
+  knowledgeCutoff = '2024-09-30';
+  defaultReasoningLevel = 'low' as const;
 }
 
 export class gpt5mini implements Model {
@@ -67,6 +69,7 @@ export class gpt5mini implements Model {
   name = 'GPT-5 mini';
   description = 'Faster, more cost-efficient version of GPT-5';
   knowledgeCutoff = '2024-05-31';
+  defaultReasoningLevel = 'low' as const;
 };
 
 export class gpt4o implements Model {
@@ -82,7 +85,7 @@ export const ALL_MODELS: Model[] = [
   new gpt41mini(),
   new o3(),
   new o4mini(),
-  new gpt5(),
+  new gpt51(),
   new gpt5mini(),
   new gpt4o(),
 ];
