@@ -24,68 +24,27 @@ export interface Model {
   name: string;
   description: string;
   knowledgeCutoff: string;
-  defaultReasoningLevel?: "minimal" | "low" | "medium" | "high";
+  defaultReasoningLevel?: "none" | "low" | "medium" | "high" | "xhigh";
 };
 
 
-export class gpt41 implements Model {
-  id = 'gpt-4.1';
-  name = 'GPT-4.1 (default)';
-  description = 'Recent GPT-4 family model with strong instruction following and world knowledge';
-  knowledgeCutoff = '2024-06-01';
-};
-
-export class gpt41mini implements Model {
-  id = 'gpt-4.1-mini';
-  name = 'GPT-4.1 mini';
-  description = 'Small multimodal model, fastest option';
-  knowledgeCutoff = '2024-06-01';
-};
-
-export class o3 implements Model {
-  id = 'o3';
-  name = 'o3';
-  description = 'Most powerful reasoning model with advanced capabilities';
-  knowledgeCutoff = '2024-06-01';
-};
-
-export class o4mini implements Model {
-  id = 'o4-mini';
-  name = 'o4-mini';
-  description = 'Small reasoning model with chain-of-thought capabilities';
-  knowledgeCutoff = '2024-06-01';
-};
-
-export class gpt51 implements Model {
-  id = 'gpt-5.1';
-  name = 'GPT-5.1';
-  description = 'Flagship model for coding, reasoning, and agentic tasks';
-  knowledgeCutoff = '2024-09-30';
-  defaultReasoningLevel = 'low' as const;
+export class gpt5_5 implements Model {
+  id = "gpt-5.5";
+  name = "GPT-5.5";
+  description = "Newest frontier model for complex work. Low and Medium reasoning levels offer the best value for most tasks, while High and XHigh are ideal for the most complex tasks.";
+  knowledgeCutoff = "2025-12-01"
+  defaultReasoningLevel = "medium" as const;
 }
 
-export class gpt5mini implements Model {
-  id = 'gpt-5-mini';
-  name = 'GPT-5 mini';
-  description = 'Faster, more cost-efficient version of GPT-5';
-  knowledgeCutoff = '2024-05-31';
-  defaultReasoningLevel = 'low' as const;
-};
-
-export class gpt4o implements Model {
-  id = 'gpt-4o';
-  name = 'GPT-4o';
-  description = 'Legacy GPT-4 family model for general purpose use';
-  knowledgeCutoff = '2023-10-01';
-};
-
+export class gpt_5_4_nano implements Model {
+  id = "gpt-5.4-nano";
+  name = "GPT-5.4 Nano";
+  description = "Small, cheap, and fast model, best for simple tasks. Medium or Xhigh reasoning levels recommended for best value.";
+  knowledgeCutoff = "2025-08-31"
+  defaultReasoningLevel = "medium" as const;
+}
 
 export const ALL_MODELS: Model[] = [
-  new gpt41(),
-  new gpt41mini(),
-  new o3(),
-  new o4mini(),
-  new gpt51(),
-  new gpt5mini(),
-  new gpt4o(),
+  new gpt5_5(),
+  new gpt_5_4_nano(),
 ];

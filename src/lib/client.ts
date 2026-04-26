@@ -3,17 +3,12 @@ import { ALL_MODELS, type Message, type Model } from "./types";
 
 export class ChatGPTClient {
   private readonly apiUrl = '/api';
-  public readonly DEFAULT_MODEL = 'gpt-4.1';
-  private readonly modelsMap: Record<string, Model> = ALL_MODELS.reduce((acc, model) => {
-    acc[model.id] = model;
-    return acc;
-  }, {} as Record<string, Model>);
+  public readonly DEFAULT_MODEL = 'gpt-5.5';
 
   constructor() { }
 
   public static buildSystemMessage(model: Model): Message {
     const text = SystemPrompts.STEMAssistant.replace('<MODEL_KNOWLEDGE_CUTOFF>', model.knowledgeCutoff);
-
     return {
       text: text,
       role: "system"
