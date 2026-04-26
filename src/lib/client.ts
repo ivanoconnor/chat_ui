@@ -1,5 +1,5 @@
 import { SystemPrompts } from "./systemPrompts";
-import { ALL_MODELS, type Message, type Model } from "./types";
+import { ALL_MODELS, type Message, type Model, type ReasoningLevelOption } from "./types";
 
 export class ChatGPTClient {
   private readonly apiUrl = '/api';
@@ -30,7 +30,11 @@ export class ChatGPTClient {
     });
   }
 
-  public async getResponse(messages: Array<Message>, model: string): Promise<Message> {
+  public async getResponse(
+    messages: Array<Message>,
+    model: string,
+    reasoningLevel?: ReasoningLevelOption
+  ): Promise<Message> {
 
     const response = await fetch(`${this.apiUrl}/chat`, {
       method: 'POST',
@@ -39,7 +43,8 @@ export class ChatGPTClient {
       },
       body: JSON.stringify({
         messages,
-        model
+        model,
+        reasoningLevel
       })
     });
 
@@ -50,7 +55,12 @@ export class ChatGPTClient {
     return response.json() as Promise<Message>;
   }
 
-  public async *streamResponse(messages: Array<Message>, model: string, abortSignal?: AbortSignal): AsyncGenerator<string, void, unknown> {
+  public async *streamResponse(
+    messages: Array<Message>,
+    model: string,
+    abortSignal?: AbortSignal,
+    reasoningLevel?: ReasoningLevelOption
+  ): AsyncGenerator<string, void, unknown> {
     const response = await fetch(`${this.apiUrl}/chat`, {
       method: 'POST',
       headers: {
@@ -59,6 +69,7 @@ export class ChatGPTClient {
       body: JSON.stringify({
         messages,
         model,
+        reasoningLevel,
         stream: true
       }),
       signal: abortSignal

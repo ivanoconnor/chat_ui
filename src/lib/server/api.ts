@@ -1,4 +1,4 @@
-import { ALL_MODELS, type Message } from "$lib/types";
+import { ALL_MODELS, type Message, type ReasoningLevelOption } from "$lib/types";
 import { OpenAI } from "openai";
 import type { ReasoningEffort } from "openai/resources.mjs";
 import type {
@@ -24,6 +24,7 @@ export class ChatGPTService {
   public async getResponse(
     messages: Array<Message>,
     modelIdentifier: string,
+    reasoningLevel?: ReasoningLevelOption
   ): Promise<Message> {
     const conversation: Array<ResponseInputItem> = [];
 
@@ -78,8 +79,8 @@ export class ChatGPTService {
       store: false
     } as OpenAI.Responses.ResponseCreateParams;
 
-    if (model.id.includes("gpt-5")) {
-      opts = { ...opts, reasoning: { "effort": model.defaultReasoningLevel as ReasoningEffort } };
+    if (model.reasoningLevelOpts && model.reasoningLevelOpts.length > 0 && reasoningLevel) {
+      opts = { ...opts, reasoning: { "effort": reasoningLevel as ReasoningEffort } };
     }
 
     // Use the responses API instead of chat.completions
@@ -103,6 +104,7 @@ export class ChatGPTService {
   public async *streamResponse(
     messages: Array<Message>,
     modelIdentifier: string,
+    reasoningLevel?: ReasoningLevelOption
   ): AsyncGenerator<string, void, unknown> {
     const conversation: Array<ResponseInputItem> = [];
 
@@ -158,8 +160,8 @@ export class ChatGPTService {
       store: false
     } as OpenAI.Responses.ResponseCreateParams;
 
-    if (model.id.includes("gpt-5")) {
-      opts = { ...opts, reasoning: { "effort": model.defaultReasoningLevel as ReasoningEffort } };
+    if (model.reasoningLevelOpts && model.reasoningLevelOpts.length > 0 && reasoningLevel) {
+      opts = { ...opts, reasoning: { "effort": reasoningLevel as ReasoningEffort } };
     }
 
     // Use the responses API with streaming enabled

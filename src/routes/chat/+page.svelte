@@ -7,6 +7,7 @@
     type FileAttachment,
     type Image,
     type Message,
+    type ReasoningLevelOption,
   } from "$lib/types";
   import { onMount, tick } from "svelte";
 
@@ -18,6 +19,7 @@
   let isStreaming = $state(false);
   let abortController: AbortController | null = null;
   let streamingEnabled = $state(true);
+  let reasoningLevel: ReasoningLevelOption = $state("medium");
 
   const systemMessage = $derived(
     ChatGPTClient.buildSystemMessage(
@@ -104,6 +106,7 @@
           messages,
           selectedModel,
           abortController.signal,
+          reasoningLevel,
         )) {
           // Update the message text
           userMessages[messageIndex].text += delta;
@@ -117,7 +120,7 @@
         }
       } else {
         // Non-streaming: get the complete response
-        const response = await client.getResponse(messages, selectedModel);
+        const response = await client.getResponse(messages, selectedModel, reasoningLevel);
         userMessages[messageIndex].text = response.text;
         userMessages[messageIndex] = { ...userMessages[messageIndex] };
         await tick();

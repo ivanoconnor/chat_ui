@@ -1,6 +1,6 @@
 import { OPENAI_API_KEY } from "$env/static/private"; // run `yarn dev` first
 import { ChatGPTService } from "$lib/server/api";
-import type { Message } from "$lib/types";
+import type { Message, ReasoningLevelOption } from "$lib/types";
 import type { RequestHandler } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 
@@ -11,6 +11,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   const messages = data.messages as Array<Message>;
   const model = data.model as string;
+  const reasoningLevel = data.reasoningLevel as ReasoningLevelOption | undefined;
   const stream = data.stream as boolean | undefined;
 
   try {
@@ -22,7 +23,7 @@ export const POST: RequestHandler = async ({ request }) => {
         async start(controller) {
           const encoder = new TextEncoder();
           try {
-            for await (const chunk of service.streamResponse(messages, model)) {
+            for await (const chunk of service.streamResponse(messages, model, reasoningLevel)) {
               const data = `data: ${JSON.stringify({ delta: chunk })}\n\n`;
               controller.enqueue(encoder.encode(data));
             }
@@ -48,7 +49,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     // Handle non-streaming requests
-    const response = await service.getResponse(messages, model);
+    const response = await service.getResponse(messages, model, reasoningLevel);
     return new Response(JSON.stringify((response)));
   } catch (err) {
     console.error("Error in POST /api/chat:", err);
