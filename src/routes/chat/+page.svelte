@@ -7,6 +7,7 @@
     type FileAttachment,
     type Image,
     type Message,
+    type Model,
     type ReasoningLevelOption,
   } from "$lib/types";
   import { onMount, tick } from "svelte";
@@ -19,12 +20,18 @@
   let isStreaming = $state(false);
   let abortController: AbortController | null = null;
   let streamingEnabled = $state(true);
-  let reasoningLevel: ReasoningLevelOption = $state("medium");
+  let modelReasoningSelections = $state<Record<string, ReasoningLevelOption>>(
+    {},
+  );
+
+  type MobileMenuView = "list" | "model";
+
+  const selectedModelConfig = $derived(
+    ChatGPTClient.getModelById(selectedModel) || ALL_MODELS[0],
+  );
 
   const systemMessage = $derived(
-    ChatGPTClient.buildSystemMessage(
-      ChatGPTClient.getModelById(selectedModel) || ALL_MODELS[0],
-    ),
+    ChatGPTClient.buildSystemMessage(selectedModelConfig),
   );
 
   // Initialize messages as empty and use a derived value that includes the system message
@@ -44,16 +51,119 @@
   // Detect if user is on a touch device
   let isTouchDevice = $state(false);
 
-  // Model selector modal state
-  let isModelSelectorOpen = $state(false);
+  // Menu state
+  let isConfigMenuOpen = $state(false);
+  let activeDesktopModelId: string | null = $state(null);
+  let activeMobileModelId: string | null = $state(null);
+  let mobileMenuView: MobileMenuView = $state("list");
+  const activeDesktopModel = $derived(findModel(activeDesktopModelId));
+  const activeMobileModel = $derived(findModel(activeMobileModelId));
 
-  function toggleModelSelector() {
-    isModelSelectorOpen = !isModelSelectorOpen;
+  function toggleConfigMenu() {
+    if (isConfigMenuOpen) {
+      closeConfigMenu();
+      return;
+    }
+
+    isConfigMenuOpen = true;
+    activeDesktopModelId = null;
+    activeMobileModelId = null;
+    mobileMenuView = "list";
   }
 
-  function selectModel(modelId: string) {
-    selectedModel = modelId;
-    isModelSelectorOpen = false;
+  function closeConfigMenu() {
+    isConfigMenuOpen = false;
+    activeDesktopModelId = null;
+    activeMobileModelId = null;
+    mobileMenuView = "list";
+  }
+
+  function openDesktopModelDetails(modelId: string) {
+    if (activeDesktopModelId === modelId) {
+      activeDesktopModelId = null;
+      return;
+    }
+
+    activeDesktopModelId = modelId;
+  }
+
+  function openMobileModelDetails(modelId: string) {
+    activeMobileModelId = modelId;
+    mobileMenuView = "model";
+  }
+
+  function backToMobileMenuList() {
+    mobileMenuView = "list";
+    activeMobileModelId = null;
+  }
+
+  function modelSupportsReasoning(model: Model): boolean {
+    return (model.reasoningLevelOpts?.length ?? 0) > 0;
+  }
+
+  function getModelReasoningLevel(
+    model: Model,
+  ): ReasoningLevelOption | undefined {
+    if (!modelSupportsReasoning(model)) {
+      return undefined;
+    }
+
+    if (modelReasoningSelections[model.id]) {
+      return modelReasoningSelections[model.id];
+    } else if (selectedModel === model.id) {
+      return model.defaultReasoningLevel;
+    }
+  }
+
+  function getSelectedModelDetailText(model: Model): string {
+    const level = getModelReasoningLevel(model);
+    if (!level) {
+      return `${model.name} • selected`;
+    }
+    return `${model.name} • ${level}`;
+  }
+
+  function findModel(modelId: string | null): Model | undefined {
+    if (!modelId) return undefined;
+    return ChatGPTClient.getModelById(modelId);
+  }
+
+  function selectModelReasoning(model: Model, level: ReasoningLevelOption) {
+    modelReasoningSelections = {
+      ...modelReasoningSelections,
+      [model.id]: level,
+    };
+    selectedModel = model.id;
+  }
+
+  function useModel(model: Model) {
+    selectedModel = model.id;
+  }
+
+  function isReasoningOptionSelected(
+    model: Model | undefined,
+    option: ReasoningLevelOption,
+  ): boolean {
+    if (!model) return false;
+    return getModelReasoningLevel(model) === option;
+  }
+
+  function isModelSelected(model: Model | undefined): boolean {
+    if (!model) return false;
+    return selectedModel === model.id;
+  }
+
+  function selectModelReasoningIfAvailable(
+    model: Model | undefined,
+    level: ReasoningLevelOption,
+  ) {
+    if (!model) return;
+    selectModelReasoning(model, level);
+  }
+
+  function useModelIfAvailable(model: Model | undefined) {
+    if (!model) return;
+    useModel(model);
   }
 
   async function sendMessage() {
@@ -94,6 +204,7 @@
     };
     const messageIndex = userMessages.length;
     userMessages.push(assistantMessage);
+    const selectedReasoningLevel = getModelReasoningLevel(selectedModelConfig);
 
     try {
       if (streamingEnabled) {
@@ -106,7 +217,7 @@
           messages,
           selectedModel,
           abortController.signal,
-          reasoningLevel,
+          selectedReasoningLevel,
         )) {
           // Update the message text
           userMessages[messageIndex].text += delta;
@@ -120,7 +231,11 @@
         }
       } else {
         // Non-streaming: get the complete response
-        const response = await client.getResponse(messages, selectedModel, reasoningLevel);
+        const response = await client.getResponse(
+          messages,
+          selectedModel,
+          selectedReasoningLevel,
+        );
         userMessages[messageIndex].text = response.text;
         userMessages[messageIndex] = { ...userMessages[messageIndex] };
         await tick();
@@ -145,10 +260,6 @@
 
   function toggleStreaming() {
     streamingEnabled = !streamingEnabled;
-    toastMessage = streamingEnabled
-      ? "Streaming enabled"
-      : "Streaming disabled";
-    toastVisible = true;
   }
 
   function isNearBottom(threshold = 100): boolean {
@@ -169,8 +280,6 @@
     if (userMessages.length > 0) {
       userMessages.splice(0, userMessages.length);
     }
-    toastMessage = "Messages cleared";
-    toastVisible = true;
   }
 
   function hideToast() {
@@ -315,31 +424,200 @@
     </div>
   {/if}
 
-  <!-- Model selector modal for small screens -->
-  {#if isModelSelectorOpen}
+  <button
+    aria-label="Open model menu"
+    class="hidden sm:flex fixed top-4 left-4 z-30 bg-neutral-700/90 hover:bg-neutral-600 text-white rounded-full w-11 h-11 items-center justify-center"
+    onclick={toggleConfigMenu}
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 448 512"
+      class="w-5 h-5 fill-current"
+    >
+      <path
+        d="M0 96c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zm0 160c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zm448 160c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"
+      />
+    </svg>
+  </button>
+
+  {#if isConfigMenuOpen}
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end sm:hidden"
-      onclick={toggleModelSelector}
+      class="fixed inset-0 bg-black/45 z-40"
+      onclick={closeConfigMenu}
       onkeydown={(e) => {
-        if (e.key === "Escape") {
-          toggleModelSelector();
-        }
+        if (e.key === "Escape") closeConfigMenu();
       }}
       role="dialog"
       tabindex="-1"
     >
       <div
-        class="bg-neutral-800 w-full rounded-t-2xl p-4 max-h-[70vh] overflow-y-auto"
+        class="hidden sm:flex absolute top-20 left-4 gap-3"
         onclick={(e) => e.stopPropagation()}
         onkeydown={(e) => e.stopPropagation()}
         role="presentation"
       >
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-white text-lg font-semibold">Select Model</h2>
+        <div
+          class="w-[320px] max-h-[80vh] overflow-y-auto bg-neutral-800 border border-neutral-600 rounded-xl p-3 shadow-2xl"
+        >
+          <div class="space-y-2">
+            {#each ALL_MODELS as model}
+              <button
+                class="w-full text-left px-3 py-2.5 rounded-lg border transition-colors"
+                class:border-blue-500={selectedModel === model.id}
+                class:bg-neutral-700={selectedModel === model.id}
+                class:border-neutral-700={selectedModel !== model.id}
+                class:bg-neutral-900={selectedModel !== model.id}
+                class:hover:bg-neutral-700={selectedModel !== model.id}
+                onclick={() => openDesktopModelDetails(model.id)}
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-white font-medium">{model.name}</div>
+                    <!-- <div class="text-neutral-400 text-xs mt-1 line-clamp-2">
+                      {model.description}
+                    </div> -->
+                    {#if selectedModel === model.id}
+                      <div class="text-[11px] text-neutral-400 mt-1">
+                        {getSelectedModelDetailText(model)}
+                      </div>
+                    {/if}
+                  </div>
+                  <div class="flex items-center justify-center my-auto">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 640 640"
+                      class="fill-white w-4 h-4"
+                      ><path
+                        d="M471.1 297.4C483.6 309.9 483.6 330.2 471.1 342.7L279.1 534.7C266.6 547.2 246.3 547.2 233.8 534.7C221.3 522.2 221.3 501.9 233.8 489.4L403.2 320L233.9 150.6C221.4 138.1 221.4 117.8 233.9 105.3C246.4 92.8 266.7 92.8 279.2 105.3L471.2 297.3z"
+                      /></svg
+                    >
+                  </div>
+                </div>
+              </button>
+            {/each}
+          </div>
+          <div class="mt-3 border-t border-neutral-700 pt-3 space-y-2">
+            <button
+              class="w-full px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-700 transition-colors flex items-center justify-between"
+              onclick={toggleStreaming}
+            >
+              <span class="text-white text-sm">Streaming</span>
+              <div
+                class="w-10 h-6 rounded-full transition-colors relative"
+                class:bg-blue-500={streamingEnabled}
+                class:bg-neutral-700={!streamingEnabled}
+              >
+                <div
+                  class="absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform"
+                  class:translate-x-[18px]={streamingEnabled}
+                  class:translate-x-0.5={!streamingEnabled}
+                ></div>
+              </div>
+            </button>
+            <button
+              class="w-full px-3 py-2 rounded-lg bg-neutral-900 hover:bg-red-500 transition-colors text-red-400 hover:text-white text-sm text-center"
+              onclick={clearMessages}
+            >
+              Clear messages
+            </button>
+          </div>
+        </div>
+
+        {#if activeDesktopModel}
+          <div
+            class="w-[340px] max-h-[80vh] overflow-y-auto bg-neutral-800 border border-neutral-600 rounded-xl p-4 shadow-2xl"
+          >
+            <h2 class="text-white text-lg font-semibold">
+              {activeDesktopModel.name}
+            </h2>
+            <div class="mt-3">
+              {#if modelSupportsReasoning(activeDesktopModel)}
+                <div class="flex flex-wrap gap-2">
+                  {#each activeDesktopModel.reasoningLevelOpts || [] as option}
+                    <button
+                      class="px-3 py-1.5 rounded-full border text-sm transition-colors"
+                      class:bg-blue-500={isReasoningOptionSelected(
+                        activeDesktopModel,
+                        option,
+                      )}
+                      class:border-blue-500={isReasoningOptionSelected(
+                        activeDesktopModel,
+                        option,
+                      )}
+                      class:text-white={isReasoningOptionSelected(
+                        activeDesktopModel,
+                        option,
+                      )}
+                      class:bg-neutral-900={!isReasoningOptionSelected(
+                        activeDesktopModel,
+                        option,
+                      )}
+                      class:border-neutral-600={!isReasoningOptionSelected(
+                        activeDesktopModel,
+                        option,
+                      )}
+                      class:text-neutral-200={!isReasoningOptionSelected(
+                        activeDesktopModel,
+                        option,
+                      )}
+                      onclick={() =>
+                        selectModelReasoningIfAvailable(
+                          activeDesktopModel,
+                          option,
+                        )}
+                    >
+                      {option}
+                    </button>
+                  {/each}
+                </div>
+              {:else}
+                <button
+                  class="px-3 py-2 rounded-lg border text-sm transition-colors"
+                  class:bg-blue-500={isModelSelected(activeDesktopModel)}
+                  class:border-blue-500={isModelSelected(activeDesktopModel)}
+                  class:text-white={isModelSelected(activeDesktopModel)}
+                  class:bg-neutral-900={!isModelSelected(activeDesktopModel)}
+                  class:border-neutral-600={!isModelSelected(
+                    activeDesktopModel,
+                  )}
+                  class:text-neutral-200={!isModelSelected(activeDesktopModel)}
+                  onclick={() => useModelIfAvailable(activeDesktopModel)}
+                >
+                  {isModelSelected(activeDesktopModel)
+                    ? "Selected"
+                    : "Use this model"}
+                </button>
+              {/if}
+            </div>
+            <p class="text-neutral-400 text-sm mt-3">
+              {activeDesktopModel.description}
+            </p>
+          </div>
+        {/if}
+      </div>
+
+      <div
+        class="sm:hidden absolute inset-x-0 bottom-0 bg-neutral-800 rounded-t-2xl p-4 max-h-[80vh] overflow-y-auto"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
+        role="presentation"
+      >
+        <div class="flex items-center justify-between mb-4">
+          {#if mobileMenuView === "model"}
+            <button
+              aria-label="Back to menu"
+              class="text-white text-sm px-2 py-1 rounded-md hover:bg-neutral-700"
+              onclick={backToMobileMenuList}
+            >
+              ← Back
+            </button>
+          {:else}
+            <h2 class="text-white text-lg font-semibold">Models</h2>
+          {/if}
           <button
-            aria-label="Close model selector"
+            aria-label="Close menu"
             class="text-neutral-400 hover:text-white"
-            onclick={toggleModelSelector}
+            onclick={closeConfigMenu}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -353,71 +631,135 @@
           </button>
         </div>
 
-        <!-- Streaming toggle in modal -->
-        <div class="mb-4 p-4 bg-neutral-900 rounded-lg">
-          <button
-            class="w-full flex items-center justify-between"
-            onclick={toggleStreaming}
-          >
-            <div class="flex items-center gap-3">
-              {#if streamingEnabled}
-                <svg
-                  viewBox="0 0 448 512"
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="fill-blue-400 w-6 h-6"
-                >
-                  <path
-                    d="M349.4 44.6c5.9-13.7 1.5-29.7-10.6-38.5s-28.6-8-39.9 1.8l-256 224c-10 8.8-13.6 22.9-8.9 35.3S50.7 288 64 288H175.5L98.6 467.4c-5.9 13.7-1.5 29.7 10.6 38.5s28.6 8 39.9-1.8l256-224c10-8.8 13.6-22.9 8.9-35.3s-16.6-20.7-30-20.7H272.5L349.4 44.6z"
-                  />
-                </svg>
-              {:else}
-                <svg
-                  viewBox="0 0 320 512"
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="fill-neutral-500 w-6 h-6"
-                >
-                  <path
-                    d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"
-                  />
-                </svg>
-              {/if}
-              <div class="text-left">
-                <div class="text-white font-medium">Streaming</div>
-                <div class="text-neutral-400 text-sm">
-                  {streamingEnabled ? "Enabled" : "Disabled"}
+        {#if mobileMenuView === "list"}
+          <div class="space-y-2">
+            {#each ALL_MODELS as model}
+              <button
+                class="w-full text-left px-3 py-3 rounded-lg border transition-colors"
+                class:border-blue-500={selectedModel === model.id}
+                class:bg-neutral-700={selectedModel === model.id}
+                class:border-neutral-700={selectedModel !== model.id}
+                class:bg-neutral-900={selectedModel !== model.id}
+                onclick={() => openMobileModelDetails(model.id)}
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-white font-medium">{model.name}</div>
+                    <!-- <div class="text-neutral-400 text-xs mt-1 line-clamp-2">
+                      {model.description}
+                    </div> -->
+                    {#if selectedModel === model.id}
+                      <div class="text-[11px] text-neutral-400 mt-1">
+                        {getSelectedModelDetailText(model)}
+                      </div>
+                    {/if}
+                  </div>
+                  <div class="flex items-center justify-center my-auto">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 640 640"
+                      class="fill-white w-4 h-4"
+                      ><path
+                        d="M471.1 297.4C483.6 309.9 483.6 330.2 471.1 342.7L279.1 534.7C266.6 547.2 246.3 547.2 233.8 534.7C221.3 522.2 221.3 501.9 233.8 489.4L403.2 320L233.9 150.6C221.4 138.1 221.4 117.8 233.9 105.3C246.4 92.8 266.7 92.8 279.2 105.3L471.2 297.3z"
+                      /></svg
+                    >
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div
-              class="w-12 h-7 rounded-full transition-colors relative"
-              class:bg-blue-500={streamingEnabled}
-              class:bg-neutral-700={!streamingEnabled}
-            >
-              <div
-                class="absolute top-0.5 w-6 h-6 bg-white rounded-full transition-transform"
-                class:translate-x-5={streamingEnabled}
-                class:translate-x-0.5={!streamingEnabled}
-              ></div>
-            </div>
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          {#each ALL_MODELS as model}
+              </button>
+            {/each}
+          </div>
+          <div class="mt-3 border-t border-neutral-700 pt-3 space-y-2">
             <button
-              class="w-full text-left p-4 rounded-lg transition-colors"
-              class:bg-neutral-700={selectedModel === model.id}
-              class:bg-neutral-900={selectedModel !== model.id}
-              class:hover:bg-neutral-700={selectedModel !== model.id}
-              onclick={() => selectModel(model.id)}
+              class="w-full px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-700 transition-colors flex items-center justify-between"
+              onclick={toggleStreaming}
             >
-              <div class="text-white font-medium">{model.name}</div>
-              <div class="text-neutral-400 text-sm mt-1">
-                {model.description}
+              <span class="text-white text-sm">Streaming</span>
+              <div
+                class="w-10 h-6 rounded-full transition-colors relative"
+                class:bg-blue-500={streamingEnabled}
+                class:bg-neutral-700={!streamingEnabled}
+              >
+                <div
+                  class="absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform"
+                  class:translate-x-[18px]={streamingEnabled}
+                  class:translate-x-0.5={!streamingEnabled}
+                ></div>
               </div>
             </button>
-          {/each}
-        </div>
+            <button
+              class="w-full px-3 py-2 rounded-lg bg-neutral-900 hover:bg-red-500 transition-colors text-red-400 hover:text-white text-sm text-center"
+              onclick={clearMessages}
+            >
+              Clear messages
+            </button>
+          </div>
+        {:else if activeMobileModel}
+          <div>
+            <h3 class="text-white text-lg font-semibold">
+              {activeMobileModel.name}
+            </h3>
+            <div class="mt-3">
+              {#if modelSupportsReasoning(activeMobileModel)}
+                <div class="flex flex-wrap gap-2">
+                  {#each activeMobileModel.reasoningLevelOpts || [] as option}
+                    <button
+                      class="px-3 py-1.5 rounded-full border text-sm transition-colors"
+                      class:bg-blue-500={isReasoningOptionSelected(
+                        activeMobileModel,
+                        option,
+                      )}
+                      class:border-blue-500={isReasoningOptionSelected(
+                        activeMobileModel,
+                        option,
+                      )}
+                      class:text-white={isReasoningOptionSelected(
+                        activeMobileModel,
+                        option,
+                      )}
+                      class:bg-neutral-900={!isReasoningOptionSelected(
+                        activeMobileModel,
+                        option,
+                      )}
+                      class:border-neutral-600={!isReasoningOptionSelected(
+                        activeMobileModel,
+                        option,
+                      )}
+                      class:text-neutral-200={!isReasoningOptionSelected(
+                        activeMobileModel,
+                        option,
+                      )}
+                      onclick={() =>
+                        selectModelReasoningIfAvailable(
+                          activeMobileModel,
+                          option,
+                        )}
+                    >
+                      {option}
+                    </button>
+                  {/each}
+                </div>
+              {:else}
+                <button
+                  class="px-3 py-2 rounded-lg border text-sm transition-colors"
+                  class:bg-blue-500={isModelSelected(activeMobileModel)}
+                  class:border-blue-500={isModelSelected(activeMobileModel)}
+                  class:text-white={isModelSelected(activeMobileModel)}
+                  class:bg-neutral-900={!isModelSelected(activeMobileModel)}
+                  class:border-neutral-600={!isModelSelected(activeMobileModel)}
+                  class:text-neutral-200={!isModelSelected(activeMobileModel)}
+                  onclick={() => useModelIfAvailable(activeMobileModel)}
+                >
+                  {isModelSelected(activeMobileModel)
+                    ? "Selected"
+                    : "Use this model"}
+                </button>
+              {/if}
+            </div>
+            <p class="text-neutral-400 text-sm mt-3">
+              {activeMobileModel.description}
+            </p>
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
@@ -599,60 +941,6 @@
       <div
         class="w-full max-w-[1000px] self-center mb-4 sm:mb-8 flex flex-row items-center px-4 justify-center gap-2"
       >
-        <button
-          aria-label="Clear chat messages"
-          class="bg-transparent hover:bg-neutral-700 fill-neutral-600 hover:fill-neutral-400
-          w-12 h-12 sm:w-14 sm:h-14 p-2.5 rounded-full mt-auto mb-1 sm:mb-0 flex-shrink-0"
-          onclick={clearMessages}
-        >
-          <svg
-            viewBox="0 0 512 512"
-            version="1.1"
-            id="svg1"
-            xmlns="http://www.w3.org/2000/svg"
-            class=""
-          >
-            <defs id="defs1" />
-            <path
-              d="M94 187.1C120.8 124.1 183.3 80 256 80c39.7 0 77.8 15.8 105.9 43.9L414.1 176 360 176c-13.3 0-24 10.7-24 24s10.7 24 24 24l112 0c13.3 0 24-10.7 24-24l0-112c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 54.1L395.9 89.9C358.8 52.8 308.5 32 256 32C163.4 32 83.9 88.2 49.8 168.3c-5.2 12.2 .5 26.3 12.7 31.5s26.3-.5 31.5-12.7zm368 157c5.2-12.2-.4-26.3-12.6-31.5s-26.3 .4-31.5 12.6C391 388.1 328.6 432 256 432c-39.7 0-77.8-15.8-105.9-43.9L97.9 336l54.1 0c13.3 0 24-10.7 24-24s-10.7-24-24-24L40 288c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-54.1 52.1 52.1C153.2 459.2 203.5 480 256 480c92.5 0 171.8-56 206-135.9z"
-              id="path1"
-            />
-          </svg>
-        </button>
-
-        <!-- Streaming toggle button (hidden on small screens) -->
-        <button
-          aria-label={streamingEnabled
-            ? "Disable streaming"
-            : "Enable streaming"}
-          class="hidden sm:flex group bg-transparent hover:bg-neutral-700 w-12 h-12 sm:w-14 sm:h-14 p-2.5 rounded-full mt-auto mb-1 sm:mb-0 flex-shrink-0 relative"
-          onclick={toggleStreaming}
-        >
-          {#if streamingEnabled}
-            <!-- Streaming enabled icon (lightning bolt) -->
-            <svg
-              viewBox="0 0 448 512"
-              xmlns="http://www.w3.org/2000/svg"
-              class="fill-blue-400/30 group-hover:fill-blue-400 w-full h-full group"
-            >
-              <path
-                d="M349.4 44.6c5.9-13.7 1.5-29.7-10.6-38.5s-28.6-8-39.9 1.8l-256 224c-10 8.8-13.6 22.9-8.9 35.3S50.7 288 64 288H175.5L98.6 467.4c-5.9 13.7-1.5 29.7 10.6 38.5s28.6 8 39.9-1.8l256-224c10-8.8 13.6-22.9 8.9-35.3s-16.6-20.7-30-20.7H272.5L349.4 44.6z"
-              />
-            </svg>
-          {:else}
-            <!-- Streaming disabled icon (pause symbol) -->
-            <svg
-              viewBox="0 0 320 512"
-              xmlns="http://www.w3.org/2000/svg"
-              class="fill-neutral-600 group-hover:fill-neutral-400 w-full h-full group"
-            >
-              <path
-                d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H80c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zm192 0c-26.5 0-48 21.5-48 48V400c0 26.5 21.5 48 48 48h32c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H240z"
-              />
-            </svg>
-          {/if}
-        </button>
-
         <!-- Hidden file input -->
         <input
           type="file"
@@ -664,7 +952,7 @@
         />
 
         <div
-          class="bg-neutral-700 rounded-[28px] p-4 flex-grow flex flex-row items-center relative"
+          class="bg-neutral-700 rounded-[28px] p-4 flex-1 flex flex-row items-center relative"
         >
           <!-- Image attachment button -->
           <button
@@ -736,34 +1024,20 @@
         </div>
         <!-- Model selector button for small screens -->
         <button
-          aria-label="Select model"
+          aria-label="Open model menu"
           class="mb-1 sm:hidden bg-transparent text-white rounded-full w-12 h-12 mt-auto p-2.5 flex items-center justify-center hover:bg-neutral-600 flex-shrink-0"
-          onclick={toggleModelSelector}
+          onclick={toggleConfigMenu}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 512 512"
-            class="w-6 h-6 fill-neutral-600 hover:fill-neutral-400"
+            viewBox="0 0 448 512"
+            class="w-6 h-6 fill-neutral-600 hover:fill-neutral-300"
           >
             <path
-              d="M78.6 5C69.1-2.4 55.6-1.5 47 7L7 47c-8.5 8.5-9.4 22-2.1 31.6l80 104c4.5 5.9 11.6 9.4 19 9.4l54.1 0 109 109c-14.7 29-10 65.4 14.3 89.6l112 112c12.5 12.5 32.8 12.5 45.3 0l64-64c12.5-12.5 12.5-32.8 0-45.3l-112-112c-24.2-24.2-60.6-29-89.6-14.3l-109-109 0-54.1c0-7.5-3.5-14.5-9.4-19L78.6 5zM19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L233.7 374.3c-7.8-20.9-9-43.6-3.6-65.1l-61.7-61.7L19.9 396.1zM512 144c0-10.5-1.1-20.7-3.2-30.5c-2.4-11.2-16.1-14.1-24.2-6l-63.9 63.9c-3 3-7.1 4.7-11.3 4.7L352 176c-8.8 0-16-7.2-16-16l0-57.4c0-4.2 1.7-8.3 4.7-11.3l63.9-63.9c8.1-8.1 5.2-21.8-6-24.2C388.7 1.1 378.5 0 368 0C288.5 0 224 64.5 224 144l0 .8 85.3 85.3c36-9.1 75.8 .5 104 28.7L429 274.5c49-23 83-72.8 83-130.5zM56 432a24 24 0 1 1 48 0 24 24 0 1 1 -48 0z"
+              d="M0 96c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zm0 160c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zm448 160c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"
             />
           </svg>
         </button>
-
-        <!-- Full model selector for larger screens -->
-        <select
-          class="hidden sm:block bg-neutral-700 text-white rounded-xl h-14 mt-auto px-2.5"
-          bind:value={selectedModel}
-        >
-          {#each ALL_MODELS as model}
-            <option
-              value={model.id}
-              title={model.description}
-              selected={model.id === selectedModel}>{model.name}</option
-            >
-          {/each}
-        </select>
       </div>
     </div>
   </div>
