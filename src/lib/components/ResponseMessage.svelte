@@ -4,11 +4,11 @@
   import hljs from "highlight.js";
   import katex from "katex";
   import { marked } from "marked";
-  import { tick } from "svelte";
 
   let { message }: { message: Message } = $props();
   let renderedText = $state("");
   let isHovered = $state(false);
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   async function processMessage(text: string) {
     try {
@@ -66,15 +66,16 @@
       markedRenderer.checkbox = (props: { checked: boolean }) => {
         return `<input type="checkbox" ${props.checked ? "checked" : ""}>`;
       };
-      markedRenderer.code = ({ text, lang, escaped }) => {
-        // Escape HTML entities in code blocks to preserve all content
-        const escapedText = text
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-        return `<pre class="code-container"><div class="flex items-center px-4 py-2 text-xs font-sans justify-between h-9 select-none bg-neutral-900 relative left-0 sticky">${lang || "text"}</div><code class="language-${lang}">${escapedText}</code></pre>`;
+
+      markedRenderer.code = ({ text, lang }) => {
+        const validLanguage =
+          lang && hljs.getLanguage(lang) ? lang : "plaintext";
+
+        const highlighted = hljs.highlight(text, {
+          language: validLanguage,
+        }).value;
+
+        return `<pre class="code-container"><div class="flex items-center px-4 py-2 text-xs font-sans justify-between h-9 select-none bg-neutral-900 relative left-0 sticky">${validLanguage}</div><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
       };
 
       const markedResult = await marked(processedText, {
@@ -108,12 +109,6 @@
       });
 
       renderedText = DOMPurify.sanitize(finalResult);
-
-      await tick();
-      hljs.highlightAll();
-
-      await tick();
-      renderedText = DOMPurify.sanitize(renderedText);
     } catch (error) {
       console.error("Error in rendering pipeline:", error);
     }
@@ -165,9 +160,21 @@
   }
 
   $effect(() => {
-    if (message?.text) {
-      processMessage(message.text);
+    const text = message?.text;
+    if (text) {
+      if (timeoutId) return;
+      timeoutId = setTimeout(() => {
+        processMessage(text);
+        timeoutId = null;
+      }, 5); // 5ms debounce
     }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
   });
 </script>
 
