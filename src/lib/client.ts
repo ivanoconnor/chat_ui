@@ -1,9 +1,10 @@
+import clientConfig from "./client.config.json";
 import { SystemPrompts } from "./systemPrompts";
 import { ALL_MODELS, type Message, type Model, type ReasoningLevelOption } from "./types";
 
 export class ChatGPTClient {
-  private readonly apiUrl = '/api';
-  public readonly DEFAULT_MODEL = 'gpt-5.5';
+  private readonly apiUrl = clientConfig.apiUrl;
+  public readonly DEFAULT_MODEL = clientConfig.defaultModel;
 
   constructor() { }
 
