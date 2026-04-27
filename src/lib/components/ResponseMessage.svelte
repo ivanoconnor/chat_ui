@@ -27,7 +27,7 @@
       });
 
       // Extract LaTeX BEFORE escaping HTML entities
-      // Replace display LaTeX with placeholders
+      // Replace display LaTeX with placeholders (\[...\] and $$...$$)
       processedText = processedText.replace(
         /\\\[((.|\n)*?)\\\]/g,
         (match, content) => {
@@ -37,9 +37,27 @@
         },
       );
 
-      // Replace inline LaTeX with placeholders
+      processedText = processedText.replace(
+        /\$\$((.|\n)*?)\$\$/g,
+        (match, content) => {
+          const id = `LATEX_DISPLAY_${latexExpressions.display.length}`;
+          latexExpressions.display.push(content);
+          return id;
+        },
+      );
+
+      // Replace inline LaTeX with placeholders (\(...\) and $...$)
       processedText = processedText.replace(
         /\\\((.*?)\\\)/g,
+        (match, content) => {
+          const id = `LATEX_INLINE_${latexExpressions.inline.length}`;
+          latexExpressions.inline.push(content);
+          return id;
+        },
+      );
+
+      processedText = processedText.replace(
+        /\$([^\$]+?)\$/g,
         (match, content) => {
           const id = `LATEX_INLINE_${latexExpressions.inline.length}`;
           latexExpressions.inline.push(content);
