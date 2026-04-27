@@ -25,6 +25,7 @@ export interface Model {
   id: string;
   name: string;
   description: string;
+  provider: "openai" | "google" | "tinfoil";
   knowledgeCutoff: string;
   reasoningLevelOpts?: readonly ReasoningLevelOption[]; // only enforced client-side
   defaultReasoningLevel?: ReasoningLevelOption;

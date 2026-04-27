@@ -1,10 +1,12 @@
-import { OPENAI_API_KEY } from "$env/static/private"; // run `yarn dev` first
+import { GEMINI_API_KEY, OPENAI_API_KEY } from "$env/static/private"; // run `yarn dev` first
 import { ChatGPTService } from "$lib/server/api";
-import type { Message, ReasoningLevelOption } from "$lib/types";
+import { GeminiService } from "$lib/server/gemini";
+import { ALL_MODELS, type Message, type ReasoningLevelOption } from "$lib/types";
 import type { RequestHandler } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 
-const service = new ChatGPTService(OPENAI_API_KEY);
+const openaiService = new ChatGPTService(OPENAI_API_KEY);
+const geminiService = new GeminiService(GEMINI_API_KEY);
 
 export const POST: RequestHandler = async ({ request }) => {
   const data = await request.json();
@@ -16,6 +18,21 @@ export const POST: RequestHandler = async ({ request }) => {
 
   try {
     if (!model) return error(400, 'Model parameter is required');
+
+    const modelObj = ALL_MODELS.find(m => m.id === model);
+    if (!modelObj) return error(400, 'Model not found');
+
+    const providerMap = {
+      "openai": openaiService,
+      "google": geminiService,
+      "tinfoil": openaiService, // TODO implement tinfoil service
+    };
+
+    if (!providerMap[modelObj.provider]) {
+      return error(400, 'Model provider not supported');
+    }
+
+    const service = providerMap[modelObj.provider];
 
     // Handle streaming requests
     if (stream) {

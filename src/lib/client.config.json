@@ -1,6 +1,6 @@
 {
   "apiUrl": "/api",
-  "defaultModel": "gpt-5.5",
+  "defaultModel": "gemini-3-flash-preview",
   "providers": [
     "openai",
     "google",
@@ -8,27 +8,41 @@
   ],
   "models": [
     {
-      "id": "gpt-5.4-nano",
-      "name": "GPT-5.4 Nano",
-      "description": "Small, cheap, and fast model, best for simple tasks. Reasoning level Xhigh is recommended for solid performance and high speed.",
-      "knowledgeCutoff": "2025-08-31",
+      "id": "gemini-3-flash-preview",
+      "name": "Gemini 3 Flash",
+      "description": "Fast and intelligent Google model, suitable for everyday tasks. High reasoning recommended.",
+      "knowledgeCutoff": "2025-01-01",
       "reasoningLevelOpts": [
-        "none",
-        "xhigh"
+        "low",
+        "medium",
+        "high"
       ],
-      "defaultReasoningLevel": "xhigh",
-      "provider": "openai"
+      "defaultReasoningLevel": "high",
+      "provider": "google"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "GPT-5 Nano",
-      "description": "Small, fast, and very cheap model, best for simple tasks. Use Medium or High reasoning levels for best results.",
-      "knowledgeCutoff": "2024-05-31",
+      "id": "gemini-3.1-pro-preview",
+      "name": "Gemini 3.1 Pro",
+      "description": "Most advanced Google model, suitable for complex problems. High reasoning recommended.",
+      "knowledgeCutoff": "2025-01-01",
       "reasoningLevelOpts": [
         "medium",
         "high"
       ],
-      "defaultReasoningLevel": "medium",
+      "defaultReasoningLevel": "high",
+      "provider": "google"
+    },
+    {
+      "id": "gpt-5.5",
+      "name": "GPT-5.5",
+      "description": "Newest OpenAI model for complex work. Low reasoning offers the best value for most tasks, while High and XHigh are ideal for the most complex tasks.",
+      "knowledgeCutoff": "2025-12-01",
+      "reasoningLevelOpts": [
+        "low",
+        "high",
+        "xhigh"
+      ],
+      "defaultReasoningLevel": "low",
       "provider": "openai"
     },
     {
@@ -44,17 +58,26 @@
       "provider": "openai"
     },
     {
-      "id": "gpt-5.5",
-      "name": "GPT-5.5",
-      "description": "Newest frontier model for complex work. Low and Medium reasoning levels offer the best value for most tasks, while High and XHigh are ideal for the most complex tasks.",
-      "knowledgeCutoff": "2025-12-01",
+      "id": "gpt-5-nano",
+      "name": "GPT-5 Nano",
+      "description": "Small, fast, and very cheap model, best for simple tasks. Use Medium or High reasoning levels for best results.",
+      "knowledgeCutoff": "2024-05-31",
       "reasoningLevelOpts": [
-        "low",
         "medium",
-        "high",
-        "xhigh"
+        "high"
       ],
       "defaultReasoningLevel": "medium",
+      "provider": "openai"
+    },
+    {
+      "id": "gpt-5.4-nano",
+      "name": "GPT-5.4 Nano",
+      "description": "Small, cheap, and fast model, best for very simple tasks.",
+      "knowledgeCutoff": "2025-08-31",
+      "reasoningLevelOpts": [
+        "none"
+      ],
+      "defaultReasoningLevel": "none",
       "provider": "openai"
     }
   ],
