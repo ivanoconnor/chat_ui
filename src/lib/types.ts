@@ -40,11 +40,11 @@ Pareto front as of 2026-04-26
 in order of increasing cost and capability:
 - GPT-5.4 Nano (none)
 - GPT-5 Nano (medium)
-- GPT-5 Nano (high)
-- GPT-5 Mini (medium)
+- Gemma 4 31B (reasoning)
 - GPT-5 Mini (high)
 - Gemini 3 Flash
 - GPT-5.5 (low)
+- GLM 5.1 (reasoning)
 - Gemini 3.1 Pro
 - GPT-5.5 (high)
 - GPT-5.5 (xhigh)

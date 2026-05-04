@@ -1,11 +1,11 @@
 import { GEMINI_API_KEY, OPENAI_API_KEY } from "$env/static/private"; // run `yarn dev` first
-import { ChatGPTService } from "$lib/server/api";
+import { OpenAIService } from "$lib/server/openai";
 import { GeminiService } from "$lib/server/gemini";
 import { ALL_MODELS, type Message, type ReasoningLevelOption } from "$lib/types";
 import type { RequestHandler } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 
-const openaiService = new ChatGPTService(OPENAI_API_KEY);
+const openaiService = new OpenAIService(OPENAI_API_KEY);
 const geminiService = new GeminiService(GEMINI_API_KEY);
 
 export const POST: RequestHandler = async ({ request }) => {

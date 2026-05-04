@@ -14,7 +14,7 @@ import type {
 import { Stream } from "openai/streaming.mjs";
 
 
-export class ChatGPTService {
+export class OpenAIService {
   private readonly openai: OpenAI;
 
   constructor(apiKey: string) {
