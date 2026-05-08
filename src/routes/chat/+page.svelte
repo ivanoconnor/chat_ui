@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChatGPTClient } from "$lib/client";
+  import { ChatClient } from "$lib/client";
   import ResponseMessage from "$lib/components/ResponseMessage.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import {
@@ -13,7 +13,7 @@
   import { onMount, tick } from "svelte";
 
   let inputMessage = $state("");
-  const client = new ChatGPTClient();
+  const client = new ChatClient();
   let selectedModel = $state(client.DEFAULT_MODEL);
   let attachedImages: Image[] = $state([]);
   let attachedFiles: FileAttachment[] = $state([]);
@@ -27,11 +27,11 @@
   type MobileMenuView = "list" | "model";
 
   const selectedModelConfig = $derived(
-    ChatGPTClient.getModelById(selectedModel) || ALL_MODELS[0],
+    ChatClient.getModelById(selectedModel) || ALL_MODELS[0],
   );
 
   const systemMessage = $derived(
-    ChatGPTClient.buildSystemMessage(selectedModelConfig),
+    ChatClient.buildSystemMessage(selectedModelConfig),
   );
 
   // Initialize messages as empty and use a derived value that includes the system message
@@ -39,6 +39,55 @@
 
   // Derived messages that always includes the current system message
   const messages = $derived([systemMessage, ...userMessages]);
+
+  const STORAGE_KEY = "chat_ui_history";
+
+  function saveHistory() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          messages: userMessages,
+          modelId: selectedModel,
+        }),
+      );
+    } catch (e) {
+      console.error("Failed to save history:", e);
+    }
+  }
+
+  function clearHistory() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      console.error("Failed to clear history:", e);
+    }
+  }
+
+  function loadHistory() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed.modelId &&
+          ALL_MODELS.some((m: Model) => m.id === parsed.modelId)
+        ) {
+          selectedModel = parsed.modelId;
+        }
+        if (Array.isArray(parsed.messages)) {
+          const validMessages = parsed.messages.filter(
+            (m: any) => m.text || m.images?.length || m.files?.length,
+          );
+          userMessages.splice(0, userMessages.length, ...validMessages);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load history:", e);
+      userMessages.splice(0, userMessages.length);
+      selectedModel = client.DEFAULT_MODEL;
+    }
+  }
 
   let textInputElement: HTMLDivElement;
   let fileInputElement: HTMLInputElement;
@@ -125,7 +174,7 @@
 
   function findModel(modelId: string | null): Model | undefined {
     if (!modelId) return undefined;
-    return ChatGPTClient.getModelById(modelId);
+    return ChatClient.getModelById(modelId);
   }
 
   function selectModelReasoning(model: Model, level: ReasoningLevelOption) {
@@ -134,10 +183,12 @@
       [model.id]: level,
     };
     selectedModel = model.id;
+    saveHistory();
   }
 
   function useModel(model: Model) {
     selectedModel = model.id;
+    saveHistory();
   }
 
   function isReasoningOptionSelected(
@@ -206,6 +257,8 @@
     userMessages.push(assistantMessage);
     const selectedReasoningLevel = getModelReasoningLevel(selectedModelConfig);
 
+    saveHistory();
+
     try {
       if (streamingEnabled) {
         // Set up abort controller for stopping the stream
@@ -247,6 +300,7 @@
         userMessages[messageIndex] = { ...userMessages[messageIndex] };
       }
     } finally {
+      saveHistory();
       isStreaming = false;
       abortController = null;
     }
@@ -280,42 +334,11 @@
     if (userMessages.length > 0) {
       userMessages.splice(0, userMessages.length);
     }
+    clearHistory();
   }
 
   function hideToast() {
     toastVisible = false;
-  }
-
-  async function handleImageUpload(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-
-    try {
-      for (let i = 0; i < input.files.length; i++) {
-        const file = input.files[i];
-        if (file.type.startsWith("image/")) {
-          const dataUrl = await ChatGPTClient.createFileDataURL(file);
-          attachedImages = [
-            ...attachedImages,
-            { url: dataUrl, detail: "auto" },
-          ];
-        }
-      }
-
-      // Reset the file input
-      if (fileInputElement) {
-        fileInputElement.value = "";
-      }
-
-      toastMessage = "Image attached";
-      toastVisible = true;
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error uploading images:", error);
-      }
-      toastMessage = "Failed to upload image";
-      toastVisible = true;
-    }
   }
 
   async function handleFileUpload(event: Event) {
@@ -326,13 +349,13 @@
       for (let i = 0; i < input.files.length; i++) {
         const file = input.files[i];
         if (file.type.startsWith("image/")) {
-          const dataUrl = await ChatGPTClient.createFileDataURL(file);
+          const dataUrl = await ChatClient.createFileDataURL(file);
           attachedImages = [
             ...attachedImages,
             { url: dataUrl, detail: "auto" },
           ];
         } else if (file.type === "application/pdf") {
-          const dataUrl = await ChatGPTClient.createFileDataURL(file);
+          const dataUrl = await ChatClient.createFileDataURL(file);
           attachedFiles = [
             ...attachedFiles,
             {
@@ -372,7 +395,7 @@
         const file = item.getAsFile();
         if (file) {
           try {
-            const dataUrl = await ChatGPTClient.createFileDataURL(file);
+            const dataUrl = await ChatClient.createFileDataURL(file);
             attachedImages = [
               ...attachedImages,
               { url: dataUrl, detail: "auto" },
@@ -408,11 +431,9 @@
 
   onMount(() => {
     // Detect touch device capability
-    isTouchDevice =
-      "ontouchstart" in window ||
-      navigator.maxTouchPoints > 0 ||
-      (navigator as any).msMaxTouchPoints > 0;
+    isTouchDevice = !window.matchMedia('(pointer: fine)').matches;
 
+    loadHistory();
     scrollChatToBottom();
   });
 </script>
@@ -987,7 +1008,7 @@
             onkeydown={(e) => {
               if (e.key === "Enter") {
                 // On touch devices: Enter always creates a new line
-                // On desktop: Enter sends (unless Shift is held for new line)
+                // On desktop: Enter sends, Shift+Enter creates new line
                 if (!isTouchDevice && !e.shiftKey) {
                   e.preventDefault();
                   sendMessage();

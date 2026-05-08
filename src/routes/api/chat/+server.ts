@@ -1,12 +1,14 @@
-import { GEMINI_API_KEY, OPENAI_API_KEY } from "$env/static/private"; // run `yarn dev` first
-import { OpenAIService } from "$lib/server/openai";
+import { GEMINI_API_KEY, OPENAI_API_KEY, TINFOIL_API_KEY } from "$env/static/private"; // run `yarn dev` first
 import { GeminiService } from "$lib/server/gemini";
+import { OpenAIService } from "$lib/server/openai";
+import { TinfoilService } from "$lib/server/tinfoil";
 import { ALL_MODELS, type Message, type ReasoningLevelOption } from "$lib/types";
 import type { RequestHandler } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
 
 const openaiService = new OpenAIService(OPENAI_API_KEY);
 const geminiService = new GeminiService(GEMINI_API_KEY);
+const tinfoilService = new TinfoilService(TINFOIL_API_KEY);
 
 export const POST: RequestHandler = async ({ request }) => {
   const data = await request.json();
@@ -25,7 +27,7 @@ export const POST: RequestHandler = async ({ request }) => {
     const providerMap = {
       "openai": openaiService,
       "google": geminiService,
-      "tinfoil": openaiService, // TODO implement tinfoil service
+      "tinfoil": tinfoilService
     };
 
     if (!providerMap[modelObj.provider]) {

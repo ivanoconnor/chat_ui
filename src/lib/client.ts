@@ -2,7 +2,7 @@ import clientConfig from "./client.config.json";
 import { SystemPrompts } from "./systemPrompts";
 import { ALL_MODELS, type Message, type Model, type ReasoningLevelOption } from "./types";
 
-export class ChatGPTClient {
+export class ChatClient {
   private readonly apiUrl = clientConfig.apiUrl;
   public readonly DEFAULT_MODEL = clientConfig.defaultModel;
 
