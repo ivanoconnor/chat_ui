@@ -49,5 +49,5 @@ in order of increasing cost and capability:
 - GPT-5.5 (high)
 - GPT-5.5 (xhigh)
 
-source: https://ivanoconnor.com/projects/notes/#eJxdTssOwjAM-xp2CxWPXZAmDnxJ1GZtpDad1jLg79lDsG6HSLGd2HY5d-mmFPaZW9aMHgX9J3E6IqsQDfmkbJehhisISryzZPKeLYmmRkfDYoHF0LsqlYUCHVNuNvyQZrJarJvS-nB-lBAkCvSEKcqY8RdrCGT4GQrCx1eBHFu3wmmjwMJwgdZjclvLn3SCro_j0MC0ms3iLm7TdO65O5ievj8BdvY
+source: https://ivanoconnor.com/projects/notes/#eJx1jksKwzAMRE_T7FTTTzaF0EVPYmzFFjhSiNykvX2TpuSzKEKgeSM0ijm3ejPGdplqcmSTZZveSnq0ZBrxmNQEbIgJLlAnqxE6tCpMHO7EGVOigOywcuJHBsQeX8XWmRE40VzteK9fWMwxVWgzlGNFCvFwfszyCmxZgIXX3MUs1wmSDJP68-rWOkHbydjYEw7LhclcxJS5E9Cgp2ez2_6xD4aVcj4
 */

@@ -20,15 +20,31 @@ export class ChatClient {
     return ALL_MODELS.find(model => model.id === modelId);
   }
 
-  public static createFileDataURL(file: File): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        resolve(event.target?.result as string);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  public static async createFileDataURL(file: File, mimeTypeOverride?: string): Promise<string> {
+    const mimeType = mimeTypeOverride || file.type || "application/octet-stream";
+
+    if (!mimeTypeOverride) {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          resolve(event.target?.result as string);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    let binary = "";
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+
+    const base64 = btoa(binary);
+    return `data:${mimeType};base64,${base64}`;
   }
 
   public async getResponse(

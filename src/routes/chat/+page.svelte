@@ -341,6 +341,34 @@
     toastVisible = false;
   }
 
+  function getFallbackType(filename: string): string {
+    const ext = filename.split(".").pop()?.toLowerCase();
+    switch (ext) {
+      case "md":
+        return "text/plain";
+      case "markdown":
+        return "text/plain";
+      case "hs":
+        return "text/plain";
+      case "pdf":
+        return "application/pdf";
+      case "csv":
+        return "text/csv";
+      case "json":
+        return "application/json";
+      default:
+        return "text/plain";
+    }
+  }
+
+  function normalizeFileType(file: File): string {
+    if (file.type && file.type !== "application/octet-stream") {
+      return file.type;
+    }
+
+    return getFallbackType(file.name);
+  }
+
   async function handleFileUpload(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -354,14 +382,18 @@
             ...attachedImages,
             { url: dataUrl, detail: "auto" },
           ];
-        } else if (file.type === "application/pdf") {
-          const dataUrl = await ChatClient.createFileDataURL(file);
+        } else {
+          const normalizedType = normalizeFileType(file);
+          const dataUrl = await ChatClient.createFileDataURL(
+            file,
+            normalizedType,
+          );
           attachedFiles = [
             ...attachedFiles,
             {
               filename: file.name,
               url: dataUrl,
-              type: file.type,
+              type: normalizedType,
             },
           ];
         }
@@ -387,36 +419,52 @@
     const items = event.clipboardData?.items;
     if (!items) return;
 
-    let hasImage = false;
+    let hasFile = false;
 
     for (const item of Array.from(items)) {
-      if (item.type.startsWith("image/")) {
-        hasImage = true;
+      if (item.kind === "file") {
+        hasFile = true;
         const file = item.getAsFile();
         if (file) {
           try {
-            const dataUrl = await ChatClient.createFileDataURL(file);
-            attachedImages = [
-              ...attachedImages,
-              { url: dataUrl, detail: "auto" },
-            ];
-
-            toastMessage = "Image pasted";
+            if (file.type.startsWith("image/")) {
+              const dataUrl = await ChatClient.createFileDataURL(file);
+              attachedImages = [
+                ...attachedImages,
+                { url: dataUrl, detail: "auto" },
+              ];
+              toastMessage = "Image pasted";
+            } else {
+              const normalizedType = normalizeFileType(file);
+              const dataUrl = await ChatClient.createFileDataURL(
+                file,
+                normalizedType,
+              );
+              attachedFiles = [
+                ...attachedFiles,
+                {
+                  filename: file.name,
+                  url: dataUrl,
+                  type: normalizedType,
+                },
+              ];
+              toastMessage = "File pasted";
+            }
             toastVisible = true;
           } catch (error) {
             if (import.meta.env.DEV) {
-              console.error("Error processing pasted image:", error);
+              console.error("Error processing pasted file:", error);
             }
-            toastMessage = "Failed to process pasted image";
+            toastMessage = "Failed to process pasted file";
             toastVisible = true;
           }
         }
       }
     }
 
-    // Let the paste event continue only if no images were found
+    // Let the paste event continue only if no files were found
     // This prevents pasting image representation into the text
-    if (hasImage) {
+    if (hasFile) {
       event.preventDefault();
     }
   }
@@ -431,7 +479,7 @@
 
   onMount(() => {
     // Detect touch device capability
-    isTouchDevice = !window.matchMedia('(pointer: fine)').matches;
+    isTouchDevice = !window.matchMedia("(pointer: fine)").matches;
 
     loadHistory();
     scrollChatToBottom();
@@ -965,7 +1013,6 @@
         <!-- Hidden file input -->
         <input
           type="file"
-          accept="image/png, image/jpeg, image/webp, image/gif, application/pdf"
           class="hidden"
           multiple
           bind:this={fileInputElement}

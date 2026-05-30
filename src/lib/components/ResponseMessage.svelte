@@ -10,6 +10,16 @@
   let isHovered = $state(false);
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
+  function closeUnfinishedCodeFence(text: string): string {
+    const fenceMatches = text.match(/```/g);
+    if (!fenceMatches || fenceMatches.length % 2 === 0) {
+      return text;
+    }
+
+    const needsNewline = !text.endsWith("\n");
+    return `${text}${needsNewline ? "\n" : ""}` + "```";
+  }
+
   async function processMessage(text: string) {
     try {
       // Store LaTeX expressions with unique identifiers
@@ -20,11 +30,17 @@
 
       // Store code blocks with placeholders to preserve them
       const codeBlocks: string[] = [];
-      let processedText = text.replace(/```[\s\S]*?```|`[^`]+`/g, (match) => {
-        const id = `CODE_BLOCK_${codeBlocks.length}`;
-        codeBlocks.push(match);
-        return id;
-      });
+      
+      // Temporarily close unfinished fences so streaming chunks render as code.
+      const textForParsing = closeUnfinishedCodeFence(text);
+      let processedText = textForParsing.replace(
+        /```[\s\S]*?```|`[^`]+`/g,
+        (match) => {
+          const id = `CODE_BLOCK_${codeBlocks.length}`;
+          codeBlocks.push(match);
+          return id;
+        },
+      );
 
       // Extract LaTeX BEFORE escaping HTML entities
       // Replace display LaTeX with placeholders (\[...\] and $$...$$)
